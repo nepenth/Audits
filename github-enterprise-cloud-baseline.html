@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub Enterprise Cloud Baseline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a standards-style control register. Sticky summary on top, domain rail left, control sheets right. */
+:root{
+  --paper:#f4f5f7; --sheet:#ffffff; --ink:#17202b; --muted:#566273; --line:#d5dae2; --wash:#eaedf2;
+  --accent:#2148a8; --accent-ink:#ffffff; --accent-wash:#e3eafb;
+  --ok:#1f7a4d; --ok-wash:#e0f2e8; --part:#a86400; --part-wash:#fbefd6; --bad:#b3261e; --bad-wash:#fbe4e2;
+  --na:#6b7480; --na-wash:#e8eaee; --risk:#6a3fb0; --risk-wash:#ece5f8;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#11161d; --sheet:#19212b; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3946; --wash:#212b37;
+    --accent:#8fb0ff; --accent-ink:#0d1524; --accent-wash:#1f2e4f;
+    --ok:#62c491; --ok-wash:#16301f; --part:#e3ad4e; --part-wash:#35290f; --bad:#f08a82; --bad-wash:#3a1b19;
+    --na:#97a1ae; --na-wash:#262f3a; --risk:#b79cf0; --risk-wash:#2a2140;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#11161d; --sheet:#19212b; --ink:#e6eaf0; --muted:#9aa6b6; --line:#2e3946; --wash:#212b37;
+  --accent:#8fb0ff; --accent-ink:#0d1524; --accent-wash:#1f2e4f;
+  --ok:#62c491; --ok-wash:#16301f; --part:#e3ad4e; --part-wash:#35290f; --bad:#f08a82; --bad-wash:#3a1b19;
+  --na:#97a1ae; --na-wash:#262f3a; --risk:#b79cf0; --risk-wash:#2a2140;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:150px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 var(--body)}
+a{color:var(--accent)}
+code{font:400 .88em var(--mono);background:var(--wash);padding:.05em .3em;border-radius:3px;overflow-wrap:anywhere}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+
+.top{position:sticky;top:0;z-index:20;background:var(--sheet);border-bottom:1px solid var(--line)}
+.top-in{max-width:1320px;margin:0 auto;padding:12px 20px 0;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;justify-content:space-between}
+.brand h1{font:600 22px/1.2 var(--display);letter-spacing:.01em}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+.sum{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.bar{flex:1 1 260px;height:10px;border-radius:5px;background:var(--wash);display:flex;overflow:hidden;min-width:200px}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.legend b{color:var(--ink);font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:baseline}
+.tabs{display:flex;gap:2px;overflow-x:auto}
+.tabs a{padding:8px 14px;text-decoration:none;color:var(--muted);font-weight:500;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+
+.wrap{max-width:1320px;margin:0 auto;padding:20px}
+.view{display:none}.view.on{display:block}
+.cols{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;align-items:start}
+.rail{position:sticky;top:150px;display:flex;flex-direction:column;gap:2px}
+.rail a{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 10px;border-radius:6px;text-decoration:none;color:var(--ink);font-size:14px}
+.rail a:hover{background:var(--wash)}
+.rail small{color:var(--muted);font-variant-numeric:tabular-nums}
+.rail .mini{grid-column:1/-1;height:3px;background:var(--wash);border-radius:2px;overflow:hidden}
+.rail .mini i{display:block;height:100%;background:var(--accent)}
+
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 14px;margin-bottom:14px}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.02em}
+label.f input,label.f select,label.f textarea{border:1px solid var(--line);border-radius:5px;background:var(--sheet);padding:6px 8px;font-size:14px;color:var(--ink);width:100%}
+label.f textarea{min-height:58px;resize:vertical;line-height:1.45}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:end}
+.tools label.f{flex:1 1 130px}
+.tools label.f.grow{flex:3 1 220px}
+.btn{border:1px solid var(--line);background:var(--sheet);border-radius:5px;padding:6px 12px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:hover{background:var(--wash)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.warn{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.io{display:none;margin-bottom:14px}.io.on{display:block}
+.io textarea{width:100%;min-height:150px;font:400 12.5px/1.45 var(--mono);border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink);padding:8px}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0}
+
+.dom{margin:26px 0 10px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;border-bottom:2px solid var(--ink);padding-bottom:6px}
+.dom h2{font:600 20px/1.2 var(--display)}
+.dom p{margin:0;color:var(--muted);font-size:13.5px}
+.ctl{background:var(--sheet);border:1px solid var(--line);border-left:5px solid var(--na);border-radius:6px;margin:10px 0;padding:12px 14px 12px 14px}
+.ctl[data-s="ok"]{border-left-color:var(--ok)}.ctl[data-s="part"]{border-left-color:var(--part)}
+.ctl[data-s="bad"]{border-left-color:var(--bad)}.ctl[data-s="risk"]{border-left-color:var(--risk)}
+.ctl[data-s="na"]{border-left-color:var(--line)}.ctl[data-s="todo"]{border-left-color:var(--na)}
+.ch{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:start}
+.cid{font:500 12.5px var(--mono);color:var(--accent);background:var(--accent-wash);padding:3px 7px;border-radius:4px;white-space:nowrap}
+.ch h3{font:600 16px/1.3 var(--body)}
+.chips{grid-column:2/3;display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:11.5px;font-weight:500;padding:1px 8px;border-radius:10px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip.sevC{background:var(--bad-wash);color:var(--bad);border-color:transparent}
+.chip.sevH{background:var(--part-wash);color:var(--part);border-color:transparent}
+.chip.prev{background:var(--risk-wash);color:var(--risk);border-color:transparent}
+.st{grid-row:1/3;grid-column:3;border:1px solid var(--line);border-radius:5px;padding:6px 8px;background:var(--sheet);font-weight:500;font-size:13.5px;min-width:150px}
+.ctl[data-s="ok"] .st{background:var(--ok-wash);color:var(--ok);border-color:transparent}
+.ctl[data-s="part"] .st{background:var(--part-wash);color:var(--part);border-color:transparent}
+.ctl[data-s="bad"] .st{background:var(--bad-wash);color:var(--bad);border-color:transparent}
+.ctl[data-s="risk"] .st{background:var(--risk-wash);color:var(--risk);border-color:transparent}
+.ctl[data-s="na"] .st{background:var(--na-wash);color:var(--na);border-color:transparent}
+.cb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;margin-top:10px}
+.cb h4,.ex h4{font:600 11px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.cb p,.ex p{margin:0;font-size:14px}
+.cb p+p{margin-top:5px}
+.ex{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.ex summary{cursor:pointer;color:var(--accent);font-size:13.5px;font-weight:500}
+.ex .in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 20px;margin-top:8px}
+.ex ul{margin:0;padding-left:18px;font-size:13.5px}
+.au{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px 14px;margin-top:10px;background:var(--paper);border-radius:5px;padding:10px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+
+.doc{max-width:70ch}
+.doc h2{font:600 24px/1.2 var(--display);margin:28px 0 8px}
+.doc h2:first-child{margin-top:0}
+.doc h3{font:600 17px/1.3 var(--body);margin:20px 0 4px}
+.doc p{margin:0 0 10px}
+.doc ul,.doc ol{margin:0 0 10px;padding-left:22px}
+.doc li{margin:3px 0}
+.wide{max-width:none}
+.layers{display:flex;flex-direction:column;gap:6px;margin:12px 0 18px;max-width:760px}
+.layer{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:6px;background:var(--sheet);padding:10px 14px}
+.layer b{font:600 15px var(--display);letter-spacing:.02em}
+.layer span{display:block;color:var(--muted);font-size:13.5px}
+.layer:nth-child(2){margin-left:22px}.layer:nth-child(3){margin-left:44px}.layer:nth-child(4){margin-left:66px}
+.tw{overflow-x:auto;margin:10px 0 18px;border:1px solid var(--line);border-radius:6px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font:600 11.5px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--wash);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.d{white-space:nowrap;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+tr.up td{background:var(--part-wash)}
+.kind{font-size:11.5px;color:var(--muted);white-space:nowrap}
+
+@media (max-width:900px){
+  html{scroll-padding-top:20px}
+  .top{position:static}
+  .cols{grid-template-columns:1fr}
+  .rail{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .rail a{flex:0 0 auto;border:1px solid var(--line);background:var(--sheet)}
+  .cb,.ex .in,.au{grid-template-columns:1fr}
+  .ch{grid-template-columns:auto minmax(0,1fr)}
+  .st{grid-row:auto;grid-column:1/-1;width:100%}
+  .chips{grid-column:1/-1}
+  .layer:nth-child(n){margin-left:0}
+}
+@media print{
+  .top{position:static}.tabs,.tools,.io,.rail,.btn,.noprint{display:none!important}
+  .cols{display:block}.view{display:none!important}.view#v-audit{display:block!important}
+  body{background:#fff;font-size:11px}.ctl{break-inside:avoid;border-color:#999}
+  details.ex>.in{display:grid!important}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <h1>GitHub Enterprise Cloud Baseline</h1>
+      <p>Enterprise Managed Users &middot; audit checklist and recommended position &middot; researched 10 November 2026</p>
+    </div>
+    <div class="sum" aria-live="polite">
+      <div class="bar" id="bar" role="img" aria-label="Audit progress"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#audit" data-v="audit">Audit checklist</a>
+      <a href="#position" data-v="position">Our position</a>
+      <a href="#changes" data-v="changes">What changed, 2025&ndash;26</a>
+      <a href="#mapping" data-v="mapping">ADO and GitLab concept map</a>
+      <a href="#sources" data-v="sources">Sources</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<!-- ================= AUDIT ================= -->
+<section class="view" id="v-audit">
+  <div class="cols">
+    <nav class="rail" id="rail" aria-label="Control domains"></nav>
+    <div>
+      <div class="panel meta">
+        <label class="f" for="m-ent">Enterprise slug<input id="m-ent" data-m="ent" placeholder="e.g. contoso"></label>
+        <label class="f" for="m-who">Auditor<input id="m-who" data-m="who"></label>
+        <label class="f" for="m-date">Audit date<input id="m-date" data-m="date" type="date"></label>
+        <label class="f" for="m-scope">Organizations in scope<input id="m-scope" data-m="scope" placeholder="all, or list"></label>
+      </div>
+      <div class="tools">
+        <label class="f grow" for="q">Search controls<input id="q" type="search" placeholder="ID, title or text"></label>
+        <label class="f" for="f-st">Status<select id="f-st"><option value="">Any status</option><option value="open">Findings (partial or non-compliant)</option></select></label>
+        <label class="f" for="f-sev">Severity<select id="f-sev"><option value="">Any severity</option><option value="C">Critical</option><option value="H">High</option><option value="M">Medium</option><option value="L">Low</option></select></label>
+        <label class="f" for="f-sc">Set at<select id="f-sc"><option value="">Any level</option><option value="E">Enterprise</option><option value="O">Organization</option><option value="R">Repository</option></select></label>
+        <label class="f" for="f-mat">Maturity<select id="f-mat"><option value="">GA and preview</option><option value="GA">GA only</option><option value="Preview">Preview only</option></select></label>
+      </div>
+      <div class="row noprint" style="margin-bottom:14px">
+        <button class="btn" id="b-open" type="button">Expand all notes</button>
+        <button class="btn" id="b-exp" type="button">Export audit</button>
+        <button class="btn" id="b-imp" type="button">Import audit</button>
+        <button class="btn" id="b-print" type="button" hidden>Print</button>
+        <button class="btn warn" id="b-reset" type="button">Clear audit</button>
+        <span class="note" id="savemsg"></span>
+      </div>
+      <div class="panel io" id="io-exp">
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="x-json" type="button">Show JSON (re-importable)</button>
+          <button class="btn" id="x-csv" type="button">Show CSV (for spreadsheets)</button>
+          <button class="btn pri" id="x-copy" type="button">Copy to clipboard</button>
+          <button class="btn" id="x-dl" type="button" hidden>Download file</button>
+        </div>
+        <textarea id="x-out" readonly aria-label="Export output"></textarea>
+        <p class="note">Statuses and notes are saved in this browser only. To hand an audit to someone else, send them this text and have them use Import audit.</p>
+      </div>
+      <div class="panel io" id="io-imp">
+        <label class="f" for="i-in">Paste a JSON export<textarea id="i-in" style="font-family:var(--mono);min-height:110px"></textarea></label>
+        <div class="row" style="margin-top:8px">
+          <button class="btn pri" id="i-go" type="button">Load pasted JSON</button>
+          <label class="f" for="i-file" style="flex:0 1 260px">or choose a .json file<input id="i-file" type="file" accept=".json,application/json"></label>
+          <span class="note" id="i-msg"></span>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= POSITION ================= -->
+<section class="view" id="v-position">
+<div class="doc">
+<h2>What this baseline is for</h2>
+<p>The organization is moving source code and pipelines from Azure DevOps and GitLab into one GitHub Enterprise Cloud enterprise that uses Enterprise Managed Users. This page states how that enterprise should be configured, and gives a checklist to audit the live configuration against it. Each control cites the documentation or guidance it rests on. Where a statement is our own judgement and not a vendor recommendation, the text says "our position".</p>
+
+<h2>Principles</h2>
+<h3>Set the floor as high in the hierarchy as it will go</h3>
+<p>GitHub's guidance is to use enterprise policies to enforce business rules, because each enterprise policy limits what organizations can choose below it. Since 2025, rulesets and custom properties also work at the enterprise level. Our position is that anything every repository must have belongs in an enterprise policy, an enterprise ruleset or an enforced security configuration. Organization and repository owners can add protection and cannot remove the floor.</p>
+<div class="layers">
+  <div class="layer"><b>Enterprise</b><span>Identity, network and token policy. Member privileges. Baseline rulesets. Actions policy. Default security configuration. Audit streaming. AI controls.</span></div>
+  <div class="layer"><b>Organization</b><span>Teams from IdP groups. Tier rulesets targeted by custom property. Runner groups. Organization secrets. App installations.</span></div>
+  <div class="layer"><b>Repository</b><span>CODEOWNERS. Required checks. Environments and their reviewers. Extra rules a team chooses.</span></div>
+  <div class="layer"><b>Workflow</b><span>Explicit permissions. Locked or pinned actions. OIDC for cloud access.</span></div>
+</div>
+
+<h3>Classify repositories, then target rules by class</h3>
+<p>Required custom properties with defaults (tier, data classification, owning team, compliance scope) let one small set of rulesets cover every repository correctly. This replaces naming conventions and hand-maintained lists, and it gives the migration a simple job: set the properties when a repository lands.</p>
+
+<h3>Identity comes from the IdP and nowhere else</h3>
+<p>With managed users, accounts, group membership and offboarding are IdP events. People get access through teams synced from IdP groups. Automation uses GitHub Apps and OIDC. Personal access tokens are the exception: fine-grained, approved and short-lived.</p>
+
+<h3>Treat CI/CD as production infrastructure</h3>
+<p>The supply chain incidents of 2025 and 2026 (tj-actions, Nx, trivy-action, TanStack) worked by getting code to run inside pipelines that held credentials. GitHub's response during 2026 was a set of enforceable controls: SHA pinning policy, workflow lockfiles and workflow execution protections. This baseline adopts those, defaults the workflow token to read-only, and replaces stored cloud keys with OIDC.</p>
+
+<h3>Evaluate first, then enforce</h3>
+<p>Rulesets and workflow execution protections both have an Evaluate mode that reports what would have been blocked. New rules start there, insights are reviewed, then the rule becomes Active. During migration this matters twice over, because some rules can make imports fail.</p>
+
+<h3>Prefer generally available features; track previews</h3>
+<p>Controls marked Preview are worth knowing about and often worth piloting. They are not required for a compliant result, and their behaviour may change.</p>
+
+<h2>Repository tiers</h2>
+<p>Our position is two tiers to start, driven by a <code>tier</code> custom property. Add a third only when a real need appears.</p>
+</div>
+<div class="tw"><table>
+<thead><tr><th>Setting</th><th>Baseline tier (every repository)</th><th>Critical tier (production, regulated or shared platform code)</th></tr></thead>
+<tbody>
+<tr><td>Applied by</td><td>Enterprise ruleset, all organizations, default branch</td><td>Enterprise or organization ruleset targeted where <code>tier</code> is critical; default and release branches</td></tr>
+<tr><td>Deletion and force push</td><td>Blocked</td><td>Blocked</td></tr>
+<tr><td>Pull request</td><td>Required, 1 approval</td><td>Required, 2 approvals, code owner review</td></tr>
+<tr><td>Stale approvals, last-pusher approval, conversations</td><td>Dismiss stale; someone other than last pusher; resolve conversations</td><td>Same</td></tr>
+<tr><td>Status checks</td><td>Required where CI exists</td><td>Required, branch up to date, source app pinned</td></tr>
+<tr><td>Security gates</td><td>Dependency review as a required workflow</td><td>Plus code scanning results rule with severity threshold</td></tr>
+<tr><td>Signed commits</td><td>Not required</td><td>Required once signing is rolled out</td></tr>
+<tr><td>Bypass</td><td>Break-glass enterprise team and named apps</td><td>Break-glass enterprise team only</td></tr>
+<tr><td>Security configuration</td><td>Baseline, enforced</td><td>Baseline plus delegated alert dismissal</td></tr>
+<tr><td>Deployment</td><td>Environments for anything that deploys</td><td>Environments with required reviewers; OIDC trust bound to the environment</td></tr>
+</tbody></table></div>
+<div class="doc">
+<h2>Order of work</h2>
+<ol>
+<li><b>Identity and break-glass.</b> IdP, SCIM, group model, setup user vaulted (ENT-01 to 03, IAM-01 to 04).</li>
+<li><b>Visibility.</b> Audit log streaming and core detections, before any real content arrives (LOG-01, LOG-05).</li>
+<li><b>Enterprise policies.</b> Member privileges, token policy, Actions policy, security configuration as the default for new repositories (POL, IAM-07, ACT-01 to 06, SEC-02).</li>
+<li><b>Classification and rulesets.</b> Custom property schema, baseline ruleset in Evaluate (POL-10, RUL-01).</li>
+<li><b>Platform repository.</b> Shared workflows, runner groups, OIDC trust pattern (ACT-08, ACT-09, ACT-15).</li>
+<li><b>Rehearse.</b> Trial migrations into a sandbox organization with the same governance (MIG-02, MIG-03).</li>
+<li><b>Migrate in waves.</b> Set properties and apply configuration per batch; reclaim mannequins; convert pipelines (MIG-04 to 08).</li>
+<li><b>Tighten.</b> Move rulesets to Active, add metadata and push rules, restrict deploy keys, require lockfiles (RUL-11, RUL-12, POL-09, ACT-03).</li>
+</ol>
+
+<h2>Decisions the organization still has to make</h2>
+<ul>
+<li>How many organizations, and what the boundary between them means (ENT-04).</li>
+<li>Whether new repositories are private or internal by default (POL-11).</li>
+<li>Which security products are licensed and what covers any gap (SEC-01).</li>
+<li>Whether to use an IP allow list, and how runners will reach the enterprise if so (IAM-06).</li>
+<li>Whether forking is allowed inside the enterprise (POL-03).</li>
+<li>Maximum token lifetime and who approves tokens (IAM-07).</li>
+<li>Evidence retention period for build and deployment records (ACT-11).</li>
+<li>Whether Copilot and third-party agents are in scope, and for whom (AI-01, AI-02).</li>
+</ul>
+
+<h2>How to run the audit</h2>
+<ul>
+<li>Work through the Audit checklist tab with an enterprise owner account, or a custom role that can read enterprise settings and policies.</li>
+<li>For each control, compare the live setting with "Recommended" using "How to check", choose a status, and record what you saw. Use Accepted risk only with a named approver in the notes.</li>
+<li>Navigation labels in GitHub change often. If a path here does not match, search the settings page for the policy name and note the new location. API hints should be checked against the current REST reference before scripting.</li>
+<li>Export the audit as JSON when finished and store it with the audit record. The export can be re-imported into any copy of this page.</li>
+</ul>
+
+<h2>External benchmarks</h2>
+<p>This baseline draws on GitHub's own documentation and Well-Architected library, the OpenSSF Source Code Management best practices guide, and practitioner analysis of recent incidents. The Center for Internet Security published CIS GitHub Benchmark v1.2.0 in March 2026. If the organization needs a formal benchmark mapping for auditors, obtain that document from CIS and map control IDs here to its recommendations; its text is not reproduced on this page.</p>
+</div>
+</section>
+
+<!-- ================= CHANGES ================= -->
+<section class="view" id="v-changes">
+  <div class="doc"><h2>Platform changes that shaped this baseline</h2>
+  <p>GitHub changed a good deal of its governance and CI security surface in 2025 and 2026. Guidance written before these dates is likely to be out of date on the points below. Shaded rows have not taken effect yet or are not generally available.</p></div>
+  <div class="tw"><table><thead><tr><th>Date</th><th>Change</th><th>Why it matters here</th><th>Controls</th><th>Source</th></tr></thead><tbody id="chg"></tbody></table></div>
+</section>
+
+<!-- ================= MAPPING ================= -->
+<section class="view" id="v-mapping">
+  <div class="doc"><h2>Where Azure DevOps and GitLab concepts land</h2>
+  <p>A working map for migration planning. The GitHub column and notes follow the importer documentation where it speaks to the item; the rest is our mapping and should be validated with each team.</p></div>
+  <div class="tw"><table><thead><tr><th>Azure DevOps</th><th>GitLab</th><th>GitHub Enterprise Cloud</th><th>Note</th></tr></thead><tbody id="map"></tbody></table></div>
+  <div class="doc">
+  <h3>What the repository importer does and does not carry</h3>
+  <ul>
+    <li><b>From Azure DevOps:</b> Git history, pull requests with their history, work item links and attachments, and repository-level branch policies. Not carried: Git LFS objects, user-scoped and cross-repo branch policies, pipelines, boards, service hooks and permissions. Only Azure DevOps Services (cloud) is a supported source.</li>
+    <li><b>From GitLab:</b> Git history, wiki, issues, merge requests as pull requests, milestones, releases and members as placeholder users. Not carried: Git LFS objects, approval rules and other project policies, group settings and membership, CI/CD pipelines, variables, webhooks, vulnerability reports, snippets and boards.</li>
+  </ul>
+  <p>See the two importer pages under Sources for the full lists and limits.</p>
+  </div>
+</section>
+
+<!-- ================= SOURCES ================= -->
+<section class="view" id="v-sources">
+  <div class="doc"><h2>Sources</h2>
+  <p>All sources were read on 10 November 2026. Each control lists the sources it relies on. Statements about previews and dates reflect those pages on that day.</p></div>
+  <div class="tw"><table><thead><tr><th>Publisher</th><th>Source</th><th>Used by</th></tr></thead><tbody id="src"></tbody></table></div>
+</section>
+</main>
+
+<script>
+/* GHEC baseline: sources, domains, controls, reference content. Researched 10 Nov 2026. */
+const SOURCES = {
+  bp:{k:"GitHub Docs",t:"Best practices for enterprises",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/overview/best-practices-for-enterprises"},
+  emuAbout:{k:"GitHub Docs",t:"About Enterprise Managed Users",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-iam/understanding-iam-for-enterprises/about-enterprise-managed-users"},
+  emuLimits:{k:"GitHub Docs",t:"Abilities and restrictions of managed user accounts",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/identity-and-access-management/understanding-iam-for-enterprises/abilities-and-restrictions-of-managed-user-accounts"},
+  emuStart:{k:"GitHub Docs",t:"Getting started with Enterprise Managed Users",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-iam/understanding-iam-for-enterprises/getting-started-with-enterprise-managed-users"},
+  polRepo:{k:"GitHub Docs",t:"Enforcing repository management policies in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-repository-management-policies-in-your-enterprise"},
+  polSec:{k:"GitHub Docs",t:"Enforcing policies for security settings in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-security-settings-in-your-enterprise"},
+  polPat:{k:"GitHub Docs",t:"Enforcing policies for personal access tokens in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-personal-access-tokens-in-your-enterprise"},
+  polActions:{k:"GitHub Docs",t:"Enforcing policies for GitHub Actions in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise"},
+  polCodespaces:{k:"GitHub Docs",t:"Enforcing policies for GitHub Codespaces in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-codespaces-in-your-enterprise"},
+  repoPolicies:{k:"GitHub Docs",t:"Governing how people use repositories in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-repositories-in-your-enterprise/governing-how-people-use-repositories-in-your-enterprise"},
+  orgStructure:{k:"GitHub Docs",t:"Best practices for structuring organizations in your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-organizations-in-your-enterprise/best-practices-for-structuring-organizations-in-your-enterprise"},
+  rules:{k:"GitHub Docs",t:"Available rules for rulesets",u:"https://docs.github.com/en/enterprise-cloud@latest/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets"},
+  roles:{k:"GitHub Docs",t:"Abilities of roles in an enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-accounts-and-repositories/managing-roles-in-your-enterprise/abilities-of-roles"},
+  ip:{k:"GitHub Docs",t:"Restricting network traffic to your enterprise with an IP allow list",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/configuring-settings/hardening-security-for-your-enterprise/restricting-network-traffic-to-your-enterprise-with-an-ip-allow-list"},
+  auditAbout:{k:"GitHub Docs",t:"About the audit log for your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/about-the-audit-log-for-your-enterprise"},
+  auditStream:{k:"GitHub Docs",t:"Streaming the audit log for your enterprise",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/monitoring-activity-in-your-enterprise/reviewing-audit-logs-for-your-enterprise/streaming-the-audit-log-for-your-enterprise"},
+  secAbout:{k:"GitHub Docs",t:"About security configurations",u:"https://docs.github.com/en/enterprise-cloud@latest/admin/managing-code-security/securing-your-enterprise/about-security-configurations"},
+  secConfig:{k:"GitHub Docs",t:"Creating a custom security configuration",u:"https://docs.github.com/en/enterprise-cloud@latest/code-security/securing-your-organization/enabling-security-features-in-your-organization/creating-a-custom-security-configuration"},
+  bypass:{k:"GitHub Docs",t:"About delegated bypass for push protection",u:"https://docs.github.com/en/enterprise-cloud@latest/code-security/secret-scanning/using-advanced-secret-scanning-and-push-protection-features/delegated-bypass-for-push-protection/about-delegated-bypass-for-push-protection"},
+  actSecure:{k:"GitHub Docs",t:"Secure use reference for GitHub Actions",u:"https://docs.github.com/en/enterprise-cloud@latest/actions/reference/security/secure-use"},
+  actPrt:{k:"GitHub Docs",t:"Securely using pull_request_target",u:"https://docs.github.com/en/enterprise-cloud@latest/actions/reference/security/securely-using-pull_request_target"},
+  actOidc:{k:"GitHub Docs",t:"OpenID Connect reference for GitHub Actions",u:"https://docs.github.com/en/enterprise-cloud@latest/actions/reference/security/oidc"},
+  customProps:{k:"GitHub Docs",t:"Managing custom properties for repositories in your organization",u:"https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-organization-settings/managing-custom-properties-for-repositories-in-your-organization"},
+  appReq:{k:"GitHub Docs",t:"Limiting OAuth app and GitHub App access requests",u:"https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-programmatic-access-to-your-organization/limiting-oauth-app-and-github-app-access-requests"},
+  dependabot:{k:"GitHub Docs",t:"Dependabot options reference",u:"https://docs.github.com/en/enterprise-cloud@latest/code-security/dependabot/working-with-dependabot/dependabot-options-reference"},
+  immutableDocs:{k:"GitHub Docs",t:"Preventing changes to your releases",u:"https://docs.github.com/en/enterprise-cloud@latest/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/preventing-changes-to-your-releases"},
+  provenance:{k:"GitHub Docs",t:"Establish provenance and integrity",u:"https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity"},
+  agentDocs:{k:"GitHub Docs",t:"Agent management for enterprises",u:"https://docs.github.com/en/copilot/concepts/enterprise/agent-management"},
+  geiAdo:{k:"GitHub Docs",t:"About migrations from Azure DevOps to GitHub Enterprise Cloud",u:"https://docs.github.com/en/migrations/using-github-enterprise-importer/migrating-from-azure-devops-to-github-enterprise-cloud/about-migrations-from-azure-devops-to-github-enterprise-cloud"},
+  geiGitlab:{k:"GitHub Docs",t:"Understand migrations from GitLab to GitHub",u:"https://docs.github.com/en/migrations/using-github-enterprise-importer/migrate-from-gitlab/understand-migrations"},
+  importer:{k:"GitHub Docs",t:"Use GitHub Actions Importer",u:"https://docs.github.com/en/enterprise-cloud@latest/actions/tutorials/migrate-to-github-actions/automated-migrations/use-github-actions-importer"},
+  clRulesGa:{k:"GitHub Changelog",t:"Enterprise custom properties and enterprise rulesets generally available (24 Mar 2025)",u:"https://github.blog/changelog/2025-03-24-enterprise-custom-properties-enterprise-rulesets-and-pull-request-merge-method-rule-are-all-now-generally-available"},
+  clShaPin:{k:"GitHub Changelog",t:"Actions policy supports blocking and SHA pinning actions (15 Aug 2025)",u:"https://github.blog/changelog/2025-08-15-github-actions-policy-now-supports-blocking-and-sha-pinning-actions/"},
+  clTeamsPreview:{k:"GitHub Changelog",t:"Managing roles and governance via enterprise teams (23 Oct 2025)",u:"https://github.blog/changelog/2025-10-23-managing-roles-and-governance-via-enterprise-teams-is-in-public-preview/"},
+  clImmutable:{k:"GitHub Changelog",t:"Immutable releases generally available (28 Oct 2025)",u:"https://github.blog/changelog/2025-10-28-immutable-releases-are-now-generally-available/"},
+  clAiPreview:{k:"GitHub Changelog",t:"Enterprise AI controls and the agent control plane, public preview (28 Oct 2025)",u:"https://github.blog/changelog/2025-10-28-enterprise-ai-controls-the-agent-control-plane-are-in-public-preview/"},
+  clAiDelegate:{k:"GitHub Changelog",t:"Delegate AI controls management (3 Nov 2025)",u:"https://github.blog/changelog/2025-11-03-delegate-ai-controls-management-to-members-of-your-enterprise/"},
+  clOrgRoles:{k:"GitHub Changelog",t:"Enterprise-defined custom organization roles generally available (23 Feb 2026)",u:"https://github.blog/changelog/2026-02-23-enterprise-defined-custom-organization-roles-are-generally-available/"},
+  clAiGa:{k:"GitHub Changelog",t:"Enterprise AI Controls and agent control plane generally available (27 Feb 2026)",u:"https://github.blog/changelog/2026-02-27-enterprise-ai-controls-agent-control-plane-now-generally-available/"},
+  clTeamsGa:{k:"GitHub Changelog",t:"Enterprise Teams generally available (4 Jun 2026)",u:"https://github.blog/changelog/2026-06-04-enterprise-teams-is-now-generally-available"},
+  clCache:{k:"GitHub Changelog",t:"Read-only Actions cache for untrusted triggers (26 Jun 2026)",u:"https://github.blog/changelog/2026-06-26-read-only-actions-cache-for-untrusted-triggers/"},
+  clManaged:{k:"GitHub Changelog",t:"Enterprise managed-settings.json generally available (1 Jul 2026)",u:"https://github.blog/changelog/2026-07-01-enterprise-managed-settings-json-is-generally-available/"},
+  clWep:{k:"GitHub Changelog",t:"Workflow execution protections generally available (17 Sep 2026)",u:"https://github.blog/changelog/2026-09-17-workflow-execution-protections-in-github-actions-generally-available/"},
+  clLogScan:{k:"GitHub Changelog",t:"Secret scanning detects secrets in Actions workflow logs (9 Nov 2026)",u:"https://github.blog/changelog/2026-11-09-secret-scanning-detects-secrets-in-github-actions-workflow-logs/"},
+  roadmap:{k:"GitHub Blog",t:"What's coming to our GitHub Actions 2026 security roadmap (26 Mar 2026)",u:"https://github.blog/news-insights/product-news/whats-coming-to-our-github-actions-2026-security-roadmap/"},
+  roadmapDisc:{k:"GitHub Community",t:"Actions 2026 security roadmap: feedback thread with GitHub status updates",u:"https://github.com/orgs/community/discussions/190621"},
+  waGov:{k:"GitHub Well-Architected",t:"Essentials of governance and administration with GitHub Enterprise",u:"https://wellarchitected.github.com/library/governance/recommendations/governance-administration-essentials/"},
+  waAgents:{k:"GitHub Well-Architected",t:"Governing agents in GitHub Enterprise",u:"https://wellarchitected.github.com/library/governance/recommendations/governing-agents/"},
+  waChecklist:{k:"GitHub Well-Architected",t:"Checklist for Application Security",u:"https://wellarchitected.github.com/library/application-security/checklist"},
+  openssf:{k:"OpenSSF",t:"SCM Best Practices: GitHub configuration recommendations",u:"https://best.openssf.org/SCM-BestPractices/github/"},
+  cis:{k:"CIS",t:"CIS Benchmarks March 2026 update (CIS GitHub Benchmark v1.2.0)",u:"https://www.cisecurity.org/insights/blog/cis-benchmarks-march-2026-update"},
+  infoq:{k:"InfoQ",t:"GitHub Actions workflow lockfiles reach general availability (Nov 2026)",u:"https://infoq.com/news/2026/11/github-actions-lockfiles-ga"},
+  socket:{k:"Socket",t:"Hardening GitHub Actions Against Outside Threats",u:"https://socket.dev/blog/hardening-github-actions-against-outside-threats"},
+  emuGuide1:{k:"GitHub Community",t:"Complete Guide to Migrating to EMU, Part 1: Discovery and Decision",u:"https://github.com/orgs/community/discussions/189382"},
+  emuGuide2:{k:"GitHub Community",t:"Complete Guide to Migrating to EMU, Part 2: Pre-Migration Preparation",u:"https://github.com/orgs/community/discussions/189383"}
+};
+
+const DOMAINS = [
+  {k:"ENT",t:"Enterprise foundation",d:"Account type, ownership, structure and delegated administration."},
+  {k:"IAM",t:"Identity and access",d:"Single sign-on, provisioning, tokens, network restrictions and automation identities."},
+  {k:"POL",t:"Repository policies",d:"Enterprise-wide member privileges, repository lifecycle and metadata."},
+  {k:"RUL",t:"Rulesets and code protection",d:"Branch, tag and push rules applied from the enterprise and organization."},
+  {k:"ACT",t:"GitHub Actions",d:"What may run, with which permissions, on which runners, using which credentials."},
+  {k:"SEC",t:"Code security",d:"Secret protection, dependency and code scanning, and supply chain integrity."},
+  {k:"LOG",t:"Audit and monitoring",d:"Audit log retention, streaming and detection."},
+  {k:"AI",t:"Copilot and agent governance",d:"Applies if Copilot or third-party coding agents are in use."},
+  {k:"MIG",t:"Migration readiness",d:"Controls specific to moving from Azure DevOps and GitLab."}
+];
+
+/* sc: E enterprise, O organization, R repository. sev: C critical, H high, M medium, L low.
+   mat: GA | Preview. lic: licence dependency text or "". */
+const CONTROLS = [
+/* ---------- ENT ---------- */
+{id:"ENT-01",d:"ENT",t:"Enterprise type is confirmed and recorded as Enterprise Managed Users",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`The enterprise is an EMU enterprise, and the decision and its trade-offs are written down and accepted by security, legal and engineering leadership.`,
+ why:`EMU puts account lifecycle and authentication under the identity provider and stops managed users creating public content or collaborating outside the enterprise. Those same limits block public repositories, gists and outside open source work from the managed account, so the trade-off needs an owner.`,
+ where:`Enterprise &rarr; Settings &rarr; Authentication security shows the IdP configuration. Usernames carry the enterprise shortcode suffix.`,
+ verify:`Confirm member handles end in <code>_SHORTCODE</code> and that sign-in redirects to the IdP. Ask for the decision record. If you believe the enterprise is EMU but cannot confirm, treat this as Not assessed.`,
+ mig:`Enterprise type cannot be converted later without a new enterprise and another migration. Confirm it before the first repository lands. Developers who contribute to open source will need a separate personal account.`,
+ src:["emuAbout","emuLimits","emuGuide1","bp"]},
+{id:"ENT-02",d:"ENT",t:"At least two enterprise owners, and no more than the role needs",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Two to four named enterprise owners, assigned through the IdP. Day-to-day administration is done through narrower roles (see ENT-05).`,
+ why:`GitHub recommends at least two owners so the enterprise stays reachable if one person is unavailable. Owners have complete control, so each extra owner widens the blast radius of a compromised account.`,
+ where:`Enterprise &rarr; People &rarr; Administrators.`,
+ verify:`Count owners and compare with the approved list. API hint: GraphQL <code>enterprise.ownerInfo.admins</code>.`,
+ src:["bp","roles","openssf"]},
+{id:"ENT-03",d:"ENT",t:"Setup user and recovery codes are vaulted and tested as break-glass",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`The <code>SHORTCODE_admin</code> setup user has a strong password and 2FA. Its credentials and the enterprise recovery codes sit in the corporate secrets vault with dual control, and a break-glass sign-in has been rehearsed.`,
+ why:`The setup user is the only account that is not provisioned by SCIM. It is the way back in if the IdP integration breaks, and it is needed to change authentication settings or migrate IdPs. Losing it during an IdP outage locks every administrator out.`,
+ where:`Vault record plus Enterprise &rarr; Settings &rarr; Authentication security (recovery codes).`,
+ verify:`Confirm the vault entries exist, who can retrieve them, and the date of the last rehearsal. Confirm sign-ins by this account are alerted on (LOG-05).`,
+ src:["emuStart"]},
+{id:"ENT-04",d:"ENT",t:"Organization structure is deliberate, small and documented",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Start with few organizations. Split only for a real governance boundary (for example highly confidential work with a small membership) or to group related work. Keep a sandbox organization for trials and migration dry runs. Record the model and who may request a new organization.`,
+ why:`GitHub's guidance is that organizations are easier to add than to remove. Mentions and search stop at the organization boundary, so over-splitting hurts collaboration. Enterprise-level rulesets, policies and teams now carry governance across organizations, so separate organizations are no longer needed just to vary policy.`,
+ where:`Enterprise &rarr; Organizations.`,
+ verify:`List organizations and compare each with its documented purpose and owner. Flag any without one.`,
+ mig:`Do not mirror ADO projects or GitLab top-level groups one-to-one into organizations. Map them to teams and custom properties inside an organization unless a governance boundary applies (see Concept map).`,
+ src:["orgStructure","bp","waGov"]},
+{id:"ENT-05",d:"ENT",t:"Administration is delegated through scoped and custom roles",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Use billing manager, app manager and security manager roles, custom enterprise roles, and enterprise-defined custom organization roles so that most administrators are not owners. Publish a role catalogue.`,
+ why:`Least privilege for administrators. Enterprise-defined custom organization roles became generally available in February 2026 and give every organization the same role definitions (up to 20 defined at the enterprise).`,
+ where:`Enterprise &rarr; People &rarr; Enterprise roles &rarr; Role management. Organization &rarr; Settings &rarr; Organization roles.`,
+ verify:`List role assignments. Check that owners are not used where a narrower role exists. Note: the enterprise security manager role is still labelled public preview in the docs.`,
+ src:["roles","clOrgRoles","clTeamsPreview","actSecure"]},
+{id:"ENT-06",d:"ENT",t:"Enterprise teams back cross-organization access and bypass lists",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Define platform, security and break-glass groups once as enterprise teams synced from IdP groups. Use them for role assignment, organization access and ruleset bypass lists.`,
+ why:`Enterprise Teams became generally available in June 2026. One IdP-backed definition avoids per-organization copies that drift, and bypass lists stay reviewable.`,
+ where:`Enterprise &rarr; People &rarr; Enterprise teams.`,
+ verify:`Confirm the teams exist, are IdP-linked, and that bypass lists (RUL-09) reference them instead of individuals.`,
+ src:["clTeamsGa","clTeamsPreview","waGov"]},
+{id:"ENT-07",d:"ENT",t:"Enterprise README explains structure, policies and how to get help",sc:"E",sev:"L",mat:"GA",lic:"",
+ rec:`An enterprise README lists the organizations and their purpose, the baseline policies, how to request repositories, apps, exceptions and runners, and a link to this baseline.`,
+ why:`GitHub recommends a README so members understand the settings they meet. It cuts support load during migration waves.`,
+ where:`Enterprise overview page.`,
+ verify:`Open the enterprise landing page and check the README is present and current.`,
+ src:["bp"]},
+{id:"ENT-08",d:"ENT",t:"Baseline configuration is held as code and checked for drift",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`Rulesets, custom properties, security configurations and Actions policies are exported or managed through the REST API or Terraform in a restricted repository. A scheduled job compares live settings with the baseline and raises drift.`,
+ why:`OpenSSF recommends automated tooling for ongoing compliance and API-driven automation that avoids standing elevated privileges. A point-in-time audit like this one goes stale; drift detection keeps it true.`,
+ where:`Platform team repository and its scheduled workflow.`,
+ verify:`Ask for the repository and the latest drift report. Rulesets can be exported as JSON from the ruleset page for comparison.`,
+ src:["openssf","waChecklist"]},
+
+/* ---------- IAM ---------- */
+{id:"IAM-01",d:"IAM",t:"One partner identity provider handles both sign-on and provisioning",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`A single partner IdP (Entra ID, Okta or PingFederate) provides SSO and SCIM.`,
+ why:`GitHub documents this as the supported paved path. Mixing Okta and Entra ID across SSO and SCIM is explicitly unsupported and provisioning attempts fail.`,
+ where:`Enterprise &rarr; Settings &rarr; Authentication security; IdP application configuration.`,
+ verify:`Confirm the same IdP tenant is configured for authentication and for SCIM.`,
+ src:["emuAbout","emuStart"]},
+{id:"IAM-02",d:"IAM",t:"OIDC with Conditional Access is used where the IdP is Entra ID",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`With Entra ID, authenticate with OIDC so Conditional Access Policies apply. With Okta or PingFederate, use SAML and cover device and location policy in the IdP sign-on rules plus the GitHub IP allow list (IAM-06).`,
+ why:`GitHub recommends OIDC for Entra ID because it supports Conditional Access, which GitHub then validates for access. Note that only the first enterprise in a tenant can use OIDC; additional enterprises must use SAML.`,
+ where:`Enterprise &rarr; Settings &rarr; Authentication security.`,
+ verify:`Record the protocol in use and the conditional access policies that target the GitHub application.`,
+ src:["emuStart","emuAbout","ip","emuGuide1"]},
+{id:"IAM-03",d:"IAM",t:"Membership and teams flow from IdP groups, not manual edits",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`SCIM provisions every account. Organization membership, team membership and enterprise roles are driven by IdP groups. Manual membership is the exception and is recorded.`,
+ why:`Joiner, mover and leaver changes then happen in one place and removing someone from the IdP removes their access. The community migration guide warns that SCIM misconfiguration can delete or rename accounts, so changes to group mapping need testing first.`,
+ where:`IdP provisioning configuration. Team pages show the linked IdP group.`,
+ verify:`Sample teams in each organization and confirm an IdP group is linked. Look for members added directly.`,
+ mig:`Build the IdP group model before migrating repositories so access can be granted to teams on arrival. Azure DevOps and GitLab permissions are not carried over by the importer.`,
+ src:["emuStart","emuAbout","emuGuide1","geiAdo"]},
+{id:"IAM-04",d:"IAM",t:"SCIM token is protected and its expiry is a managed event",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`The SCIM token is a classic token on the setup user with only the <code>scim:enterprise</code> scope, stored in the vault and in the IdP only. If a token lifetime policy applies to it, rotation has an owner and a calendar entry.`,
+ why:`That token can create and suspend every account. GitHub's setup guide has it created without expiry, and the token policy docs advise exempting administrators from lifetime limits when SCIM is used, or accepting the risk of a service interruption.`,
+ where:`Setup user &rarr; Developer settings; IdP provisioning credentials.`,
+ verify:`Confirm scope, storage and whether the lifetime policy exempts administrators (IAM-07). Test provisioning after any token policy change.`,
+ src:["emuStart","polPat"]},
+{id:"IAM-05",d:"IAM",t:"Contractors and vendors use the guest collaborator role",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`External people are provisioned from the IdP as guest collaborators and added only to the organizations or repositories they need.`,
+ why:`Guest collaborators cannot see internal repositories unless they are added to that organization, so internal visibility does not leak to third parties.`,
+ where:`IdP role assignment; Enterprise &rarr; People.`,
+ verify:`List guest collaborators and their organization memberships. Compare with the vendor register.`,
+ src:["roles","emuLimits","emuGuide1"]},
+{id:"IAM-06",d:"IAM",t:"Network access is restricted by IP allow list or IdP conditional access",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Enable GitHub's IP allow list, or the IdP's conditional access option (Entra ID with OIDC). Turn on user-level enforcement so managed users' own repositories are covered. Add runner, app and migration tool addresses first.`,
+ why:`The allow list covers web, API and Git access, including tokens and SSH keys, to private and internal resources. A stolen token is then useless from outside approved networks.`,
+ where:`Enterprise &rarr; Settings &rarr; Authentication security &rarr; IP allow list.`,
+ verify:`Confirm the list is enabled (not only populated), user-level enforcement is on, and use the built-in Check IP address tool with a known outside address.`,
+ mig:`Standard GitHub-hosted runners do not have a fixed range. Workflows that call back into the enterprise need self-hosted runners, larger runners with static IPs, or Azure private networking. Allow the GitHub Enterprise Importer and any staging storage before migration waves.`,
+ src:["ip","geiAdo"]},
+{id:"IAM-07",d:"IAM",t:"Personal access tokens are restricted, short-lived and approved",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Classic tokens: access restricted at the enterprise. Fine-grained tokens: allowed, approval required, maximum lifetime set (our position: 90 days or less). Decide the administrator exemption deliberately.`,
+ why:`Classic tokens are broadly scoped and by default have no expiry requirement. Fine-grained tokens are limited to chosen repositories and permissions and can require approval by the organization. In EMU the policy also applies to user namespaces.`,
+ where:`Enterprise &rarr; Policies &rarr; Personal access tokens (Fine-grained tokens and Tokens (classic) tabs).`,
+ verify:`Record the three settings on each tab: access, maximum lifetime, approval. Defaults are permissive (organizations decide; 366 days for fine-grained; none for classic).`,
+ mig:`Migration tooling and legacy integrations often expect classic tokens. Time-box any exception and move integrations to GitHub Apps (IAM-09). Test SCIM before restricting classic tokens (IAM-04).`,
+ src:["polPat"]},
+{id:"IAM-08",d:"IAM",t:"SSH access is governed (certificate authority or keys with policy)",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Decide between SSH certificates issued by a corporate CA and ordinary SSH keys behind the IP allow list. If a CA is used, upgrade any CA uploaded before 27 March 2024 so non-expiring certificates are rejected.`,
+ why:`SSH certificates give short-lived, centrally issued Git credentials. Requiring them also blocks HTTPS and unsigned keys for organization repositories, with exemptions for GitHub Apps, deploy keys, Actions and Codespaces, so it needs planning.`,
+ where:`Enterprise &rarr; Settings &rarr; Authentication security &rarr; SSH Certificate Authorities.`,
+ verify:`Record whether a CA exists, whether Require SSH Certificates is on, and whether each CA shows an Upgrade action.`,
+ src:["polSec"]},
+{id:"IAM-09",d:"IAM",t:"Automation uses GitHub Apps; app installation is controlled",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Integrations authenticate as GitHub Apps with least permissions. Repository administrators cannot install apps without review, and app access requests go to a defined approver. Keep an inventory of installed apps and their permissions.`,
+ why:`Apps have fine-grained permissions and short-lived tokens and are not tied to a person. By default repository administrators can install apps that do not ask for organization permissions, which lets third parties in without review.`,
+ where:`Organization &rarr; Settings &rarr; Member privileges (GitHub Apps; App access requests). Organization &rarr; Settings &rarr; GitHub Apps.`,
+ verify:`Check the repository-admin install setting is off. Export installed apps (API hint: <code>GET /orgs/{org}/installations</code>) and review permissions and repository scope.`,
+ mig:`ADO service hooks and GitLab webhooks and integrations are not migrated. Rebuild each one as an app installation and record its owner.`,
+ src:["appReq","polRepo","openssf","waChecklist"]},
+{id:"IAM-10",d:"IAM",t:"Unauthenticated visitors: decision made on automatic SSO redirect",sc:"E",sev:"L",mat:"Preview",lic:"",
+ rec:`Choose deliberately. Off (default) returns a 404 so resource names are not confirmed to outsiders. On redirects to the IdP, which is friendlier for links and for Git Credential Manager.`,
+ why:`Either choice is defensible. The docs note that with redirect on, anyone with a URL learns the resource exists. With it off, Git Credential Manager users may need account filtering turned off.`,
+ where:`Enterprise &rarr; Identity provider &rarr; Single sign-on configuration.`,
+ verify:`Record the setting and the reason. The setting is in public preview for EMU.`,
+ src:["polSec","emuAbout"]},
+{id:"IAM-11",d:"IAM",t:"Privileged and dormant access is reviewed on a schedule",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`Quarterly review of enterprise owners, organization owners, repository administrators, role assignments, app installations and approved tokens. Members and administrators inactive for six months are removed in the IdP.`,
+ why:`OpenSSF recommends small owner and administrator counts and removal of accounts inactive for six months.`,
+ where:`Enterprise &rarr; People; organization People and role pages; audit log.`,
+ verify:`Ask for the last review record and sample its findings against current assignments.`,
+ src:["openssf","roles"]},
+
+/* ---------- POL ---------- */
+{id:"POL-01",d:"POL",t:"Base repository permission is None, enforced at the enterprise",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Base permission: None for all organizations. Access is granted through teams. Innersource reach is provided on purpose through internal visibility (POL-11).`,
+ why:`A base permission above None gives every member that access to every repository in the organization. OpenSSF recommends restricting default member permissions. Internal repositories still give organization members read access whatever this is set to.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Base permissions.`,
+ verify:`Confirm the enterprise policy value and that it is enforced, not left to organization owners.`,
+ src:["polRepo","openssf"]},
+{id:"POL-02",d:"POL",t:"Repository creation is controlled and user-namespace repositories are blocked",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Members may create private and internal repositories only (or creation goes through a request workflow). Tick Block the creation of user namespace repositories.`,
+ why:`User-namespace repositories sit outside organization rulesets, security configurations and team access, and their Actions cannot use GitHub-hosted runners. Blocking them keeps all code under organization governance.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository creation.`,
+ verify:`Record the creation setting and the user-namespace checkbox. Search for existing user-owned repositories.`,
+ mig:`If creation is restricted to owners, members also cannot change visibility. Give migration automation an identity that can create repositories in the target organizations.`,
+ src:["polRepo","emuLimits","openssf"]},
+{id:"POL-03",d:"POL",t:"Forking of private and internal repositories is limited",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Either disable forking, or allow forks only into organizations within the enterprise. Do not allow forks into user namespaces.`,
+ why:`Forks copy code to a place with different administrators and settings. OpenSSF recommends not allowing members to fork internal and private repositories. Forks inside the enterprise can also be used to trigger workflows in organizations the user does not belong to.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository forking.`,
+ verify:`Record the setting and, if enabled, the permitted fork destinations.`,
+ mig:`Teams used to fork-based merge requests in GitLab need a decision: branch-based pull requests in one repository (simplest) or forks restricted to the same organization.`,
+ src:["polRepo","openssf","emuLimits"]},
+{id:"POL-04",d:"POL",t:"Only owners can add repository collaborators",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Restrict invitations of repository collaborators to organization owners (or enterprise owners).`,
+ why:`Direct collaborators bypass team-based access and are easy to forget. In EMU the role is called repository collaborator and can only be another managed user, but it still grants access outside the team model.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository outside collaborators.`,
+ verify:`Record the setting. List current direct collaborators per organization.`,
+ src:["polRepo","openssf"]},
+{id:"POL-05",d:"POL",t:"Visibility changes are limited to owners",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Only organization owners can change repository visibility.`,
+ why:`Changing private to internal exposes a repository to the whole enterprise. OpenSSF recommends members cannot change visibility.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository visibility change.`,
+ verify:`Record the setting.`,
+ src:["polRepo","openssf"]},
+{id:"POL-06",d:"POL",t:"Deletion and transfer are limited to owners",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Only organization owners can delete or transfer repositories. Where the repository policies preview is used, route requests through delegated bypass.`,
+ why:`Deletion and transfer are destructive or move code out of its governed home. A request path avoids both data loss and owner bottlenecks.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository deletion and transfer. Enterprise &rarr; Policies &rarr; Repository.`,
+ verify:`Record the setting and any repository policy that covers deletions or transfers.`,
+ src:["polRepo","repoPolicies"]},
+{id:"POL-07",d:"POL",t:"Issue deletion is limited to owners",sc:"E",sev:"L",mat:"GA",lic:"",
+ rec:`Only organization owners can delete issues.`,
+ why:`Issues carry decision history and, after migration, imported work history. Close them; do not delete them.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository issue deletion.`,
+ verify:`Record the setting.`,
+ src:["polRepo"]},
+{id:"POL-08",d:"POL",t:"Default branch name is set and enforced",sc:"E",sev:"L",mat:"GA",lic:"",
+ rec:`Default branch name <code>main</code>, with Enforce across this enterprise selected. Restrict branch renames on enterprise-ruled branches to enterprise owners.`,
+ why:`Rulesets target the default branch by reference, but a consistent name keeps pipelines, documentation and tooling simple.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Default branch name; Repository branch renames.`,
+ verify:`Record both settings.`,
+ mig:`Imported repositories keep their existing default branch (often <code>master</code> or <code>develop</code>). Decide whether to rename after migration and update pipelines to match.`,
+ src:["polRepo","geiGitlab"]},
+{id:"POL-09",d:"POL",t:"Deploy keys are restricted in favour of GitHub Apps",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Restrict deploy key creation once integrations have moved to GitHub Apps or OIDC.`,
+ why:`Deploy keys are long-lived, tied to one repository and not attributable to a person. GitHub's policy page points to GitHub Apps for fine-grained access.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Deploy keys.`,
+ verify:`Record the setting. Inventory existing deploy keys before changing it.`,
+ mig:`Disabling the policy disables every existing deploy key at once. Sequence this after the migration waves, not before.`,
+ src:["polRepo"]},
+{id:"POL-10",d:"POL",t:"Custom properties classify every repository",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Define enterprise-level properties, required with defaults, for at least: criticality tier, data classification, owning team and compliance scope. Only owners or a platform role set values.`,
+ why:`Properties let rulesets, repository policies and OIDC claims target repositories by what they are, not by name. Enterprise-level properties have been generally available since March 2025 and keep the schema identical across organizations.`,
+ where:`Enterprise &rarr; Policies &rarr; Custom properties. Organization &rarr; Settings &rarr; Custom properties.`,
+ verify:`Export the schema (API hint: <code>GET /orgs/{org}/properties/schema</code>) and count repositories still on default values.`,
+ mig:`Set properties as part of each migration batch so the right rulesets apply on arrival. Carry ADO project and GitLab group names into an owning-team or source property.`,
+ src:["customProps","clRulesGa","repoPolicies","waGov"]},
+{id:"POL-11",d:"POL",t:"Default visibility and innersource stance are decided",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`State which visibility new repositories should take. Our position: private by default, internal by choice for shared libraries, platform code and documentation.`,
+ why:`New repositories in an enterprise organization default to internal, which every organization member in the enterprise can read. That suits innersource but is often wider than teams coming from project-scoped ADO or GitLab access expect.`,
+ where:`Enterprise &rarr; Policies &rarr; Member privileges &rarr; Repository creation; repository policies for visibility.`,
+ verify:`Count internal repositories and sample whether each is intentionally shared.`,
+ mig:`Choose the target visibility per repository in the migration plan. Do not accept the default.`,
+ src:["polRepo","repoPolicies","roles"]},
+{id:"POL-12",d:"POL",t:"Repository policies enforce naming and lifecycle rules",sc:"E",sev:"L",mat:"Preview",lic:"",
+ rec:`Use enterprise repository policies for a naming convention and for visibility, deletion and transfer limits targeted by custom property. Treat as optional until the feature leaves preview.`,
+ why:`Policies add targeting, bypass lists and delegated bypass that the Member privileges switches lack. They combine with Member privileges, and the most restrictive rule wins.`,
+ where:`Enterprise &rarr; Policies &rarr; Repository &rarr; New policy.`,
+ verify:`List policies and their enforcement status. Policies and rulesets share a combined limit of 75 per enterprise or organization.`,
+ src:["repoPolicies"]},
+{id:"POL-13",d:"POL",t:"Codespaces is enabled only where intended",sc:"E",sev:"L",mat:"GA",lic:"",
+ rec:`Enable Codespaces for specific organizations, or disable it, according to whether cloud development environments are approved.`,
+ why:`Codespaces places source code and credentials in cloud-hosted environments and incurs spend. It should be a decision, not a default.`,
+ where:`Enterprise &rarr; Policies &rarr; Codespaces.`,
+ verify:`Record the setting and the organizations enabled.`,
+ src:["polCodespaces","emuLimits"]},
+
+/* ---------- RUL ---------- */
+{id:"RUL-01",d:"RUL",t:"A baseline branch ruleset is applied from the enterprise",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`One enterprise ruleset targets the default branch of all repositories in all organizations. Stricter tiers are layered with rulesets targeted by custom property. New rulesets start in Evaluate mode and move to Active after rule insights are reviewed.`,
+ why:`Enterprise rulesets cannot be edited from a repository, and when several rulesets match, the strictest combination applies. Teams can add protection but cannot remove the floor. Legacy branch protection rules are per repository and easy to weaken.`,
+ where:`Enterprise &rarr; Policies &rarr; Repository &rarr; Rulesets (label may read Code rulesets).`,
+ verify:`Open the ruleset: status Active, target all organizations and repositories, default branch included. API hint: <code>GET /orgs/{org}/rulesets</code> lists inherited rulesets.`,
+ mig:`ADO repository-level branch policies are migrated by the importer; user-scoped and cross-repo policies are not. GitLab approval rules and merge gates are not migrated. The enterprise baseline is what guarantees a floor either way.`,
+ src:["clRulesGa","rules","geiAdo","geiGitlab","waGov"]},
+{id:"RUL-02",d:"RUL",t:"Default and release branches cannot be deleted or force-pushed",sc:"EO",sev:"C",mat:"GA",lic:"",
+ rec:`Restrict deletions and Block force pushes on the default branch and on release branch patterns.`,
+ why:`These stop history being rewritten or lost. Both are on by default in a new ruleset, and both are OpenSSF recommendations.`,
+ where:`Baseline ruleset &rarr; Rules.`,
+ verify:`Confirm both rules are ticked and the branch targeting covers release patterns in use.`,
+ src:["rules","openssf"]},
+{id:"RUL-03",d:"RUL",t:"Changes reach protected branches only through reviewed pull requests",sc:"EO",sev:"C",mat:"GA",lic:"",
+ rec:`Require a pull request before merging with: at least 1 approval (2 for the critical tier), dismiss stale approvals when new commits are pushed, require approval from someone other than the last pusher, and require conversation resolution.`,
+ why:`Review by a second person is the main control against both mistakes and a single compromised account. Without the last-pusher rule, a reviewer can push changes and their earlier approval still counts.`,
+ where:`Baseline and tier rulesets &rarr; Require a pull request before merging.`,
+ verify:`Record the approval count and the three options for each tier.`,
+ mig:`ADO minimum-reviewer policies map directly. ADO's option to let requesters approve their own changes has no counterpart; authors cannot approve their own pull requests.`,
+ src:["rules","openssf"]},
+{id:"RUL-04",d:"RUL",t:"Code owners review sensitive paths, including workflow files",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`Critical-tier repositories require code owner review. Every repository's CODEOWNERS assigns <code>.github/workflows/</code>, <code>.github/actions/</code> and CODEOWNERS itself to the platform or security team. Use the required reviewers by team rule where an organization-wide pattern is needed.`,
+ why:`GitHub's Actions guidance is to put workflow files under CODEOWNERS so pipeline changes get designated review. A workflow change can expose secrets or alter what is deployed.`,
+ where:`Ruleset &rarr; pull request options. Repository <code>CODEOWNERS</code> file.`,
+ verify:`Sample repositories for a CODEOWNERS file that covers workflow paths and resolves to real teams with write access.`,
+ mig:`GitLab CODEOWNERS files need syntax checks after migration (sections and optional approvals differ). ADO automatic reviewer policies by path become CODEOWNERS entries.`,
+ src:["actSecure","rules","openssf"]},
+{id:"RUL-05",d:"RUL",t:"Required status checks gate merges",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`Repositories with CI require their build and test checks. The critical tier requires branches to be up to date before merging. Pin each required check to the GitHub App expected to report it.`,
+ why:`OpenSSF recommends all checks pass and branches be current before merge. Pinning the source stops another integration reporting a check of the same name.`,
+ where:`Tier rulesets &rarr; Require status checks to pass.`,
+ verify:`Sample repositories: required checks listed, strict mode where expected, source app set.`,
+ mig:`ADO build validation policies become required checks once the pipeline runs in Actions or reports status to GitHub.`,
+ src:["rules","openssf"]},
+{id:"RUL-06",d:"RUL",t:"Organization-wide required workflows run security and compliance checks",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`Use the Require workflows to pass rule to run centrally owned workflows (for example dependency review or policy checks) on pull requests to protected branches. Target specific branches, not all branches.`,
+ why:`Central workflows give every repository the same gate without copying YAML. The rule blocks direct pushes to targeted refs, which is why the docs warn against applying it to all branches.`,
+ where:`Organization or enterprise ruleset &rarr; Require workflows to pass before merging.`,
+ verify:`Confirm the workflow repository's visibility lets target repositories use it, and that the rule targets only protected branches.`,
+ mig:`This replaces GitLab compliance pipelines or pipeline execution policies and ADO required templates.`,
+ src:["rules","infoq"]},
+{id:"RUL-07",d:"RUL",t:"Security findings block merges on critical repositories",sc:"OR",sev:"H",mat:"GA",lic:"GitHub Code Security",
+ rec:`Critical tier: Require code scanning results with a severity threshold. Consider the secret scanning alerts rule (public preview) and the licence compliance rule where relevant.`,
+ why:`The rule blocks a merge when the required tool has found alerts at the threshold, has not finished, or is not configured, so scanning cannot be skipped silently.`,
+ where:`Critical-tier ruleset &rarr; Require code scanning results.`,
+ verify:`Record tools and thresholds. Confirm the tier's repositories have code scanning running (SEC-08).`,
+ src:["rules"]},
+{id:"RUL-08",d:"RUL",t:"Commit signing position is decided per tier",sc:"OR",sev:"M",mat:"GA",lic:"",
+ rec:`Require signed commits on the critical tier once developers and bots can sign. Do not require it enterprise-wide on day one.`,
+ why:`Signing ties commits to a verified identity and is an OpenSSF recommendation. The rule has friction: unsigned commits on a branch can block squash merges and must be rebased to fix.`,
+ where:`Critical-tier ruleset &rarr; Require signed commits.`,
+ verify:`Record the decision and where the rule is active.`,
+ mig:`Imported history from ADO and GitLab is unsigned. Trial this rule in Evaluate on migrated repositories before making it Active.`,
+ src:["rules","openssf"]},
+{id:"RUL-09",d:"RUL",t:"Bypass lists are short, team-based and reviewed",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Bypass is granted to a break-glass enterprise team and named GitHub Apps only. No individual users, and no blanket bypass for repository administrators. Bypass events are reviewed monthly through rule insights.`,
+ why:`A ruleset is only as strong as its bypass list. Enterprise teams, roles and apps can be used in bypass lists, and rule insights show every bypass at the enterprise level.`,
+ where:`Each ruleset &rarr; Bypass list. Enterprise &rarr; Policies &rarr; Repository &rarr; Rule insights.`,
+ verify:`List bypass actors for every enterprise and organization ruleset. Open rule insights and filter for bypassed results over the last 30 days.`,
+ src:["clTeamsPreview","clRulesGa","rules"]},
+{id:"RUL-10",d:"RUL",t:"Release tags are protected",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`A tag ruleset restricts updates and deletions for release tag patterns (for example <code>v*</code>) and restricts creation to release automation.`,
+ why:`Moved tags were the mechanism in the 2025 and 2026 action supply chain compromises. Internal actions and reusable workflows referenced by tag depend on tags staying put.`,
+ where:`Enterprise or organization ruleset with tag target.`,
+ verify:`Confirm a tag ruleset exists and is Active, and check its bypass list.`,
+ src:["rules","socket","clImmutable"]},
+{id:"RUL-11",d:"RUL",t:"Push rules block unwanted files",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`A push ruleset restricts file size (aligned with the 100 MiB platform limit or lower), blocks binary and secret-bearing extensions, and restricts paths that only platform teams should change.`,
+ why:`Push rules apply to the whole repository and its forks, not one branch, so they stop content before it enters history. They are available on Enterprise Cloud for private and internal repositories.`,
+ where:`Organization or enterprise &rarr; Rulesets &rarr; New push ruleset.`,
+ verify:`List push rulesets and their restrictions.`,
+ mig:`GitLab push rules map here (file size, file name patterns) and to metadata rules (RUL-12). Leave push rulesets off or in Evaluate until imports finish so they cannot reject migrated content.`,
+ src:["rules","clAiPreview"]},
+{id:"RUL-12",d:"RUL",t:"Commit metadata rules are introduced only after migration",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Rules on commit author email, committer email, commit message and branch names stay disabled or in Evaluate for target organizations until each migration wave completes.`,
+ why:`GitHub's importer documentation states that organization rulesets can make a migration fail, with a required author email domain as the example. Historical commits rarely meet a new pattern.`,
+ where:`Organization and enterprise rulesets &rarr; Restrictions (metadata).`,
+ verify:`Check whether any Active ruleset in a migration target organization has metadata restrictions.`,
+ mig:`This is the most common self-inflicted migration failure in the documentation. Add it to the pre-flight checklist for every wave.`,
+ src:["geiAdo","geiGitlab","rules"]},
+{id:"RUL-13",d:"RUL",t:"Merge strategy is standardised",sc:"OR",sev:"L",mat:"GA",lic:"",
+ rec:`Choose the allowed merge methods (our position: squash by default; merge commits where release branching needs them) and state whether linear history is required.`,
+ why:`A consistent method keeps history readable and makes reverts predictable. OpenSSF lists linear history as a recommendation; it rules out merge commits, so decide knowingly.`,
+ where:`Ruleset &rarr; pull request &rarr; Allowed merge methods; Require linear history.`,
+ verify:`Record the methods allowed per tier.`,
+ mig:`ADO's merge-type branch policy and GitLab's merge method setting map to this rule. Merge queue and deployment rules exist only at repository level.`,
+ src:["rules","clRulesGa","openssf"]},
+
+/* ---------- ACT ---------- */
+{id:"ACT-01",d:"ACT",t:"Only approved actions and reusable workflows can run",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`Policy: Allow enterprise, and select non-enterprise, actions and reusable workflows. Allow GitHub-authored actions. Add third-party actions individually to the allow list after review. Use the block list for known-bad actions.`,
+ why:`Third-party actions run with the job's token and secrets. Compromised actions were the entry point for the tj-actions (March 2025) and trivy-action (March 2026) incidents. OpenSSF recommends limiting actions to verified or explicitly trusted ones.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; Policies.`,
+ verify:`Record the selected option and export the allow list. API hint: <code>GET /enterprises/{enterprise}/actions/permissions</code> and <code>/selected-actions</code>.`,
+ mig:`Actions Importer output references marketplace actions. Review its audit report early and seed the allow list so converted workflows run.`,
+ src:["polActions","clShaPin","openssf","socket","actSecure"]},
+{id:"ACT-02",d:"ACT",t:"Actions must be pinned to a full commit SHA",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Tick Require actions to be pinned to a full-length commit SHA.`,
+ why:`Tags can be moved; a commit SHA cannot. Repositories that pinned by SHA were unaffected by the tj-actions retagging. Dependencies covered by a lockfile satisfy this policy without editing workflow files.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions, under the allowed actions selection.`,
+ verify:`Confirm the checkbox. Note the documented exception: reusable workflows can still be referenced by tag, so pin those by convention.`,
+ mig:`Converted workflows from Actions Importer use tags. Pin them (or onboard to lockfiles) as part of the conversion review.`,
+ src:["polActions","clShaPin","socket","actSecure"]},
+{id:"ACT-03",d:"ACT",t:"Workflow dependency lockfiles are adopted, then required",sc:"EOR",sev:"H",mat:"GA",lic:"",
+ rec:`Onboard workflows to lockfiles (<code>.github/workflows/actions.lock</code>, maintained with the <code>gh actions-lock</code> extension). Add a CI step that verifies the lockfile is current. Enable Require lockfile per organization once coverage is high, alongside ACT-02.`,
+ why:`GitHub's secure-use guidance now treats lockfiles as the strongest option because they record exact commits for direct and transitive actions, which SHA pinning alone does not. General availability was reported for 28 October 2026, so expect tooling to mature.`,
+ where:`Repository lockfile; Require lockfile in Actions policy settings at enterprise, organization or repository level.`,
+ verify:`Sample repositories for the lockfile. Record where Require lockfile is enabled.`,
+ mig:`Caveats from practitioners: reusable workflow calls sit outside the lockfile, local actions and container images are not locked, and tag-based allow list entries do not match locked dependencies (use wildcards or SHAs). A lockfile proves the commit is fixed, not that it is safe; review Dependabot updates before merging.`,
+ src:["actSecure","polActions","infoq","socket","roadmap"]},
+{id:"ACT-04",d:"ACT",t:"Default workflow token is read-only",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`Workflow permissions: read repository contents and packages. Workflows declare the extra permissions each job needs.`,
+ why:`A read-only default limits what a compromised step can change. Enterprises created on or after 2 February 2023 default to read-only, but confirm it. Organizations cannot choose a more permissive default than the enterprise.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; Workflow permissions.`,
+ verify:`Record the setting. API hint: <code>GET /orgs/{org}/actions/permissions/workflow</code> returns <code>default_workflow_permissions</code>.`,
+ mig:`ADO build service identities often had broad project rights. Converted workflows must declare a <code>permissions</code> block explicitly.`,
+ src:["polActions","actSecure","openssf","socket"]},
+{id:"ACT-05",d:"ACT",t:"Actions cannot create or approve pull requests",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Leave Allow GitHub Actions to create and approve pull requests off.`,
+ why:`Otherwise a workflow can approve a pull request and satisfy the review rule with no human involved. OpenSSF and GitHub both recommend keeping this off.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; Workflow permissions.`,
+ verify:`Confirm the checkbox is clear (<code>can_approve_pull_request_reviews: false</code> in the API response from ACT-04).`,
+ mig:`Automation that opens pull requests (dependency bots, release tooling) should use a GitHub App identity.`,
+ src:["polActions","actSecure","openssf"]},
+{id:"ACT-06",d:"ACT",t:"Fork pull requests get no secrets or write tokens",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`For private and internal repositories: do not send write tokens or secrets to workflows from fork pull requests, and require approval for fork pull request workflows.`,
+ why:`Anyone who can fork and open a pull request can change the workflow code that runs. If the enterprise disables these options, organizations and repositories cannot turn them on.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; Fork pull request workflows in private repositories.`,
+ verify:`Record the four checkboxes.`,
+ src:["polActions","actSecure"]},
+{id:"ACT-07",d:"ACT",t:"Workflow execution protections limit risky triggers and who can run deploys",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Create an event rule that disallows <code>pull_request_target</code> except for allow-listed workflow files. Create actor rules so only release or operations teams can trigger deployment workflows manually. Run in Evaluate mode first and review Insights.`,
+ why:`<code>pull_request_target</code> runs with the base repository's secrets and is the root of pwn-request attacks. GitHub's new default rule that blocks it covers public repositories only, so private and internal repositories need an explicit rule.`,
+ where:`Enterprise or organization Actions policy settings &rarr; workflow execution rules (generally available since 17 September 2026; check current navigation).`,
+ verify:`List actor and event rules, their mode (Evaluate or Active) and targeting. A REST API exists for these rules at all three levels.`,
+ mig:`This replaces ADO pipeline permissions and GitLab protected-environment and protected-branch run restrictions for manual pipelines.`,
+ src:["clWep","roadmap","actPrt","socket"]},
+{id:"ACT-08",d:"ACT",t:"Self-hosted runners are ephemeral, grouped and not repository-level",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Disable repository-level self-hosted runners. Register runners at organization or enterprise level in runner groups limited to selected repositories (and selected workflows for deployment runners). Runners are single-job, just-in-time instances.`,
+ why:`A persistent runner keeps state between jobs, so one malicious job can tamper with the next or steal its credentials. Anyone who can open a pull request in a repository that uses the runner can run code on it.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; Runners. Organization &rarr; Settings &rarr; Actions &rarr; Runner groups.`,
+ verify:`Record the repository-level runner policy. For each runner group list its repository access, workflow restrictions and whether runners are ephemeral.`,
+ mig:`ADO agent pools and GitLab runners map to runner groups. Do not re-register long-lived build servers as persistent runners. If the IP allow list is on, plan static egress (IAM-06).`,
+ src:["polActions","actSecure","openssf","socket"]},
+{id:"ACT-09",d:"ACT",t:"Cloud access uses OIDC with tight trust conditions",sc:"EOR",sev:"H",mat:"GA",lic:"",
+ rec:`Workflows obtain short-lived cloud credentials through OIDC. Enable the enterprise-specific issuer. Cloud trust policies match on immutable identifiers (repository ID or the ID-bearing subject format) plus environment or branch, and may use repository custom property claims.`,
+ why:`No long-lived cloud keys are stored as secrets. The enterprise issuer lets cloud providers accept tokens from this enterprise only. Subject claims with owner and repository IDs became the default for repositories created after 15 July 2026 and survive renames.`,
+ where:`Cloud IAM trust policies. API: <code>/enterprises/{enterprise}/actions/oidc/customization/issuer</code>; organization OIDC settings.`,
+ verify:`Confirm <code>include_enterprise_slug</code> is true. Sample cloud trust policies for a subject condition (never audience alone) and for the issuer URL containing the enterprise slug.`,
+ mig:`This is the replacement for ADO service connections and GitLab CI variables holding cloud keys. Migrate to OIDC; do not copy the keys across.`,
+ src:["actOidc","actSecure","socket"]},
+{id:"ACT-10",d:"ACT",t:"Secrets are scoped by environment and managed by few",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`Deployment secrets live in environments with required reviewers and branch restrictions. Organization secrets are limited to selected repositories. Secret management is granted through a custom role, not general write access.`,
+ why:`Environment protection puts a human approval between a workflow and production credentials. GitHub's 2026 roadmap moves secret management out of write access and adds scoped secrets bound to workflows and branches; building on environments now eases that move.`,
+ where:`Repository &rarr; Settings &rarr; Environments. Organization &rarr; Settings &rarr; Secrets and variables &rarr; Actions.`,
+ verify:`List organization secrets and their repository access (flag any set to all repositories). Sample production environments for required reviewers.`,
+ mig:`ADO variable groups and library secrets, and GitLab CI/CD variables, are not migrated. Recreate only what OIDC (ACT-09) cannot replace. Check the changelog for scoped secrets status before designing.`,
+ src:["actSecure","roadmap","socket"]},
+{id:"ACT-11",d:"ACT",t:"Retention for runs, logs and artifacts is set on purpose",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Set retention to match the evidence retention requirement (default is 90 days; private and internal repositories can go to 400 days). Export anything needed longer.`,
+ why:`From 1 October 2026 the retention policy also governs checks, workflow runs and commit statuses, which were previously kept for over 400 days regardless. Build evidence for audits now expires with this setting.`,
+ where:`Enterprise &rarr; Policies &rarr; Actions &rarr; retention settings.`,
+ verify:`Record the value and compare it with the compliance requirement for build and deployment evidence.`,
+ mig:`Pipeline run history, job logs and artifacts from ADO and GitLab are not migrated. Archive what auditors may ask for before decommissioning.`,
+ src:["polActions","geiGitlab"]},
+{id:"ACT-12",d:"ACT",t:"Dependabot keeps actions current, with a cooldown",sc:"OR",sev:"M",mat:"GA",lic:"",
+ rec:`Enable Dependabot version updates for the <code>github-actions</code> ecosystem with a cooldown period, grouped updates and human review (no blind auto-merge).`,
+ why:`Pinned actions do not update themselves, and Dependabot raises security alerts only for actions referenced by version, not by SHA. A release-age delay lets the community catch a malicious release first. For lockfile workflows, Dependabot updates the lock entry in the same pull request.`,
+ where:`<code>.github/dependabot.yml</code> in each repository (or a central template).`,
+ verify:`Sample repositories for a <code>github-actions</code> entry with <code>cooldown</code>.`,
+ src:["actSecure","dependabot","socket","infoq"]},
+{id:"ACT-13",d:"ACT",t:"Workflows are statically analysed",sc:"OR",sev:"M",mat:"GA",lic:"",
+ rec:`Enable CodeQL analysis for GitHub Actions workflows. Run a workflow linter such as zizmor or actionlint in CI for repositories that own deployment workflows.`,
+ why:`These catch script injection through untrusted context values, over-broad permissions and unsafe checkouts in privileged triggers. GitHub's guidance recommends CodeQL for workflows and OpenSSF Scorecard checks.`,
+ where:`Code scanning setup (languages include Actions). CI configuration.`,
+ verify:`Sample repositories: code scanning shows the Actions language analysed.`,
+ src:["actSecure","actPrt","socket"]},
+{id:"ACT-14",d:"ACT",t:"Runner network egress is known and constrained",sc:"EO",sev:"M",mat:"Preview",lic:"",
+ rec:`Decide where builds may connect. Options today: self-hosted or larger runners with private networking and an egress proxy, or a third-party runner agent in audit mode. Track GitHub's native egress firewall and adopt its audit mode when available to you.`,
+ why:`Most CI credential theft ends with a call to an attacker's server. GitHub's Layer 7 egress firewall for hosted runners was in technical preview in audit mode as of mid-2026 and was not generally available at the time of writing.`,
+ where:`Runner configuration and network design.`,
+ verify:`Record the current egress posture for hosted and self-hosted runners. Check the roadmap thread for firewall status.`,
+ src:["roadmap","roadmapDisc","socket","ip"]},
+{id:"ACT-15",d:"ACT",t:"Shared CI logic lives in governed reusable workflows",sc:"O",sev:"M",mat:"GA",lic:"",
+ rec:`Build, scan and deploy patterns are published as reusable workflows and composite actions from a platform-owned repository with tagged, protected releases. Product repositories call them and keep little pipeline code of their own.`,
+ why:`Central ownership means one place to fix a vulnerability and one place to review. It also makes OIDC trust on <code>job_workflow_ref</code> possible, so only the approved deploy workflow can assume a cloud role.`,
+ where:`Platform repository; Organization &rarr; Settings &rarr; Actions &rarr; access for reusable workflows.`,
+ verify:`Confirm the repository exists, has the critical-tier ruleset and tag protection, and sample product repositories for use of it.`,
+ mig:`This is the home for ADO YAML templates and task groups and for GitLab CI includes and components. Design it before bulk pipeline conversion or teams will each invent their own.`,
+ src:["actOidc","actSecure","importer"]},
+
+/* ---------- SEC ---------- */
+{id:"SEC-01",d:"SEC",t:"Security product licensing is decided and recorded",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Record which of GitHub Secret Protection and GitHub Code Security are licensed, for which organizations, and what covers any gap (for example a third-party scanner).`,
+ why:`Secret scanning with push protection needs Secret Protection; code scanning, dependency review and premium Dependabot features need Code Security, for private and internal repositories. Several controls below depend on this.`,
+ where:`Enterprise &rarr; Billing and licensing; Enterprise &rarr; Policies &rarr; Advanced Security.`,
+ verify:`Record licences held and committer counts. Mark dependent controls Not applicable only with a compensating control noted.`,
+ src:["secAbout","secConfig"]},
+{id:"SEC-02",d:"SEC",t:"A security configuration is applied to every repository and enforced",sc:"EO",sev:"C",mat:"GA",lic:"",
+ rec:`One baseline configuration (plus a stricter one for the critical tier if needed) is applied to all repositories, set as the default for newly created repositories (All repositories), with Enforce configuration on.`,
+ why:`Configurations turn security features on as a set and, when enforced, stop repository owners turning them off. Features left unset in a configuration are not enforced, so set each one explicitly.`,
+ where:`Enterprise or organization &rarr; Settings &rarr; Advanced Security &rarr; Configurations.`,
+ verify:`Open the configuration list: coverage should be all repositories with no failures. API hint: <code>GET /orgs/{org}/code-security/configurations</code>.`,
+ mig:`The new-repository default does not apply to transferred repositories, which need the configuration applied by hand. After each migration batch, filter for repositories with no configuration attached.`,
+ src:["secConfig","secAbout","waChecklist"]},
+{id:"SEC-03",d:"SEC",t:"Secret scanning and push protection are on everywhere",sc:"EO",sev:"C",mat:"GA",lic:"GitHub Secret Protection",
+ rec:`Secret scanning alerts and push protection enabled in the baseline configuration.`,
+ why:`Push protection stops a credential before it enters history, which is far cheaper than rotation after a leak. Credentials in source are the most common finding after any SCM migration.`,
+ where:`Security configuration &rarr; Secret Protection.`,
+ verify:`Confirm both settings are Enabled in the enforced configuration and view the enterprise secret scanning alert count.`,
+ mig:`Expect a wave of alerts when old history arrives. Agree a triage and rotation process first. The community EMU guide advises cleaning secrets out before migrating.`,
+ src:["secConfig","secAbout","emuGuide2"]},
+{id:"SEC-04",d:"SEC",t:"Push protection bypass is delegated, with exemptions only for named automation",sc:"O",sev:"H",mat:"GA",lic:"GitHub Secret Protection",
+ rec:`Contributors cannot bypass push protection themselves; requests go to the security team for review. Exemptions are granted only to named service identities.`,
+ why:`Self-service bypass turns the control into a warning. With delegated bypass, requests are reviewed and expire after seven days.`,
+ where:`Security configuration &rarr; Push protection &rarr; Bypass privileges.`,
+ verify:`Record the bypass list and exemptions. Review recent bypass requests.`,
+ mig:`GitHub's docs name migration bots as a case for exemptions. Grant the migration identity an exemption for the migration window, then remove it.`,
+ src:["bypass","secConfig"]},
+{id:"SEC-05",d:"SEC",t:"Extended secret detection is enabled",sc:"O",sev:"M",mat:"GA",lic:"GitHub Secret Protection",
+ rec:`Enable validity checks, generic (non-provider) patterns and AI-detected secrets. Add custom patterns for internal token formats.`,
+ why:`Validity checks show which leaked secrets are still live so triage starts with real exposure. Generic and AI detection find passwords and keys that have no vendor pattern.`,
+ where:`Security configuration &rarr; Secret Protection.`,
+ verify:`Record each setting in the enforced configuration and the list of custom patterns.`,
+ src:["secConfig"]},
+{id:"SEC-06",d:"SEC",t:"Secret scanning of Actions workflow logs is evaluated",sc:"E",sev:"L",mat:"Preview",lic:"GitHub Secret Protection",
+ rec:`Enable the preview once the alert process can absorb it.`,
+ why:`Build logs are a common place for unmasked credentials. The preview, announced 9 November 2026, scans completed run logs for provider patterns; it does not send notifications during preview.`,
+ where:`Enterprise &rarr; Policies &rarr; Advanced Security &rarr; Secret scanning for Actions workflow logs.`,
+ verify:`Record whether it is enabled.`,
+ src:["clLogScan"]},
+{id:"SEC-07",d:"SEC",t:"Dependency graph, Dependabot alerts and security updates are on",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Dependency graph, automatic dependency submission, Dependabot alerts, malware alerts and security updates enabled in the baseline configuration.`,
+ why:`These give an inventory of third-party components and automatic pull requests for known vulnerabilities. OpenSSF recommends vulnerability alerts on every repository.`,
+ where:`Security configuration &rarr; dependency settings.`,
+ verify:`Confirm each setting in the enforced configuration.`,
+ mig:`This replaces GitLab dependency scanning and ADO-side scanners. GitLab vulnerability reports are not migrated; findings start fresh.`,
+ src:["secConfig","openssf","geiGitlab"]},
+{id:"SEC-08",d:"SEC",t:"Code scanning runs by default on all repositories",sc:"EO",sev:"H",mat:"GA",lic:"GitHub Code Security",
+ rec:`CodeQL default setup enabled through the configuration, with advanced setup allowed for teams that need it. Copilot Autofix decision recorded.`,
+ why:`Default setup needs no per-repository workflow and follows the languages in the repository. Note that disabling Actions for an organization also stops code scanning there.`,
+ where:`Security configuration &rarr; Code Security &rarr; Default setup.`,
+ verify:`Enterprise security overview: percentage of repositories with code scanning enabled.`,
+ src:["secConfig","polActions"]},
+{id:"SEC-09",d:"SEC",t:"Dependency review gates pull requests",sc:"OR",sev:"M",mat:"GA",lic:"GitHub Code Security",
+ rec:`Dependency review is enabled (it comes with the dependency graph under Code Security) and the dependency review action runs as a required workflow on protected branches.`,
+ why:`It flags a vulnerable or disallowed-licence dependency at the pull request, before it is merged. OpenSSF lists dependency review as a repository recommendation.`,
+ where:`Security configuration; required workflow (RUL-06).`,
+ verify:`Sample pull requests for the dependency review check.`,
+ src:["secConfig","actSecure","openssf","rules"]},
+{id:"SEC-10",d:"SEC",t:"Alert dismissal requires a second person",sc:"O",sev:"M",mat:"GA",lic:"GitHub Secret Protection / Code Security",
+ rec:`Enable Prevent direct alert dismissals for secret scanning, code scanning and Dependabot on the critical tier at least.`,
+ why:`A developer under delivery pressure can otherwise close their own finding as a false positive with no review.`,
+ where:`Security configuration &rarr; each product section.`,
+ verify:`Record the three settings.`,
+ src:["secConfig"]},
+{id:"SEC-11",d:"SEC",t:"The security team holds the security manager role",sc:"EO",sev:"M",mat:"GA",lic:"",
+ rec:`Assign the security team as security managers in every organization (and the enterprise security manager role where the preview is acceptable).`,
+ why:`The role gives read access to code and write access to alerts and security settings without ownership, and security managers can always review push protection bypasses.`,
+ where:`Organization &rarr; Settings &rarr; Organization roles. Enterprise &rarr; People &rarr; Enterprise roles.`,
+ verify:`List assignments per organization.`,
+ src:["roles","bypass","clTeamsPreview"]},
+{id:"SEC-12",d:"SEC",t:"Releases are immutable",sc:"O",sev:"M",mat:"GA",lic:"",
+ rec:`Enforce immutable releases for all repositories in each organization.`,
+ why:`Once published, assets cannot be swapped and the tag cannot be moved, and each release gets a signed attestation. This protects consumers of internal actions, tools and libraries. It applies to future releases only.`,
+ where:`Organization &rarr; Settings, immutable releases option (also available per repository under Settings &rarr; Releases).`,
+ verify:`API hint: <code>GET /orgs/{org}/settings/immutable-releases</code> should return <code>enforced_repositories: all</code>.`,
+ mig:`Releases migrated from GitLab arrive as ordinary releases created before enforcement and stay mutable unless republished.`,
+ src:["clImmutable","immutableDocs","geiGitlab"]},
+{id:"SEC-13",d:"SEC",t:"Build provenance is attested for deployable artifacts",sc:"R",sev:"M",mat:"GA",lic:"",
+ rec:`Release workflows for deployable artifacts and container images generate artifact attestations, and deployment verifies them.`,
+ why:`An attestation links an artifact to the workflow, repository and commit that built it, so a deployment can refuse anything not built by the approved pipeline.`,
+ where:`Release workflows; deployment admission checks.`,
+ verify:`Sample a critical service: its build workflow produces an attestation and the deploy step verifies it.`,
+ src:["provenance","clImmutable"]},
+
+/* ---------- LOG ---------- */
+{id:"LOG-01",d:"LOG",t:"The audit log is streamed to the SIEM",sc:"E",sev:"C",mat:"GA",lic:"",
+ rec:`Stream the enterprise audit log to the security data platform (Amazon S3, Azure Blob Storage, Azure Event Hubs, Datadog, Google Cloud Storage or Splunk), using OIDC for S3 where possible.`,
+ why:`GitHub keeps audit events for 180 days and Git events for seven days. Without streaming there is no record of who cloned or pushed what after a week, which is usually the first question in an incident.`,
+ where:`Enterprise &rarr; Settings &rarr; Audit log &rarr; Log streaming.`,
+ verify:`Confirm a stream is configured and healthy, and that recent events are present at the destination.`,
+ mig:`Turn this on before the first migration wave so the import activity itself is recorded. Streams only cover events from the time they are enabled.`,
+ src:["auditStream","auditAbout","waAgents"]},
+{id:"LOG-02",d:"LOG",t:"API request events are included in the stream",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Enable API Request Events.`,
+ why:`Token misuse shows up as API calls. The option adds security-relevant API endpoints to the stream and is off unless enabled.`,
+ where:`Enterprise &rarr; Settings &rarr; Audit log &rarr; Settings.`,
+ verify:`Record the setting.`,
+ src:["auditStream"]},
+{id:"LOG-03",d:"LOG",t:"Source IP addresses are recorded in audit events",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Enable display of source IP addresses in the enterprise audit log.`,
+ why:`The source IP is optional in audit entries. Investigations and geo or network detections need it.`,
+ where:`Enterprise &rarr; Settings &rarr; Audit log &rarr; Settings.`,
+ verify:`Open a recent audit event and check that an IP address is shown.`,
+ src:["auditAbout"]},
+{id:"LOG-04",d:"LOG",t:"Stream health is monitored",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`Alert on stream health failures and on gaps at the destination. Pause the stream for planned maintenance of the receiver.`,
+ why:`GitHub checks stream health daily and emails enterprise owners; a misconfigured stream must be fixed within six days or events are dropped. A paused stream buffers seven days.`,
+ where:`Enterprise &rarr; Settings &rarr; Audit log &rarr; Log streaming; SIEM ingestion monitoring.`,
+ verify:`Ask who receives the health email and whether the SIEM alerts on silence. Streaming to a second endpoint is in public preview.`,
+ src:["auditStream"]},
+{id:"LOG-05",d:"LOG",t:"Detections exist for high-risk administrative events",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`SIEM rules alert on: setup user sign-in, enterprise or organization owner added, ruleset or policy changed or disabled, ruleset bypass, security configuration detached, app installed or permissions changed, token approved, IP allow list changed, audit stream changed, and repository visibility or transfer events.`,
+ why:`Each of these is a way to weaken the baseline in this document. Detecting the change is what makes the baseline durable between audits.`,
+ where:`SIEM detection content.`,
+ verify:`Ask for the rule list and a test alert for at least two of the events.`,
+ src:["waChecklist","openssf","auditAbout"]},
+
+/* ---------- AI ---------- */
+{id:"AI-01",d:"AI",t:"Copilot, agent and MCP policies are set at the enterprise",sc:"E",sev:"H",mat:"GA",lic:"Copilot Business or Enterprise",
+ rec:`Configure all three policy surfaces under AI Controls (Agents, Copilot, MCP). Our position: enable cloud agents for a pilot group first, restrict models to an approved list, and review which features are enabled by default.`,
+ why:`AI Controls became the single home for these policies in February 2026. GitHub's Well-Architected guidance calls out enabling agents without audit log streaming or model restrictions as an anti-pattern.`,
+ where:`Enterprise &rarr; AI controls.`,
+ verify:`Record each policy value on the Agents, Copilot and MCP pages.`,
+ src:["clAiGa","agentDocs","waAgents"]},
+{id:"AI-02",d:"AI",t:"Third-party agents are governed separately from Copilot",sc:"E",sev:"M",mat:"GA",lic:"Copilot Business or Enterprise",
+ rec:`Set an explicit policy for each partner agent. Do not assume the Copilot cloud agent setting covers them.`,
+ why:`GitHub documents that disabling or restricting Copilot cloud agent does not disable third-party agents, and the reverse. Each is configured on its own.`,
+ where:`Enterprise &rarr; AI controls &rarr; Agents.`,
+ verify:`Record the availability setting for each listed agent.`,
+ src:["agentDocs"]},
+{id:"AI-03",d:"AI",t:"MCP server use is limited to an approved registry",sc:"E",sev:"M",mat:"Preview",lic:"Copilot Business or Enterprise",
+ rec:`Publish an approved MCP registry and set the MCP policy to allow only servers in it.`,
+ why:`MCP servers give agents access to external tools and data. An unvetted server is both a data exfiltration path and a prompt injection path. Enterprise-wide MCP allow lists were still in preview when AI Controls went GA.`,
+ where:`Enterprise &rarr; AI controls &rarr; MCP.`,
+ verify:`Record the policy and the registry contents.`,
+ src:["clAiGa","agentDocs","clAiPreview"]},
+{id:"AI-04",d:"AI",t:"Client behaviour is fixed with enterprise managed settings",sc:"E",sev:"M",mat:"GA",lic:"Copilot Business or Enterprise",
+ rec:`Maintain <code>managed-settings.json</code> in the enterprise's <code>.github-private</code> repository, under the critical-tier ruleset.`,
+ why:`Managed settings enforce Copilot configuration in VS Code, the CLI, the Copilot app and cloud agent, in addition to AI Controls policies. The file is itself a policy, so changes need review.`,
+ where:`<code>.github-private</code> repository; confirmation on Enterprise &rarr; AI controls &rarr; Agents.`,
+ verify:`Confirm the file exists, the configuration shows as active, and the repository is protected.`,
+ src:["clManaged","waAgents"]},
+{id:"AI-05",d:"AI",t:"Agent activity is audited",sc:"E",sev:"M",mat:"Preview",lic:"Copilot Business or Enterprise",
+ rec:`Include agent session events in the audit stream and review agent activity alongside other detections.`,
+ why:`Agents act with repository access. Audit logs are GitHub's stated means of seeing what agents did. Streaming of agent session events was in public preview at the time of writing.`,
+ where:`Enterprise &rarr; AI controls; audit log streaming settings.`,
+ verify:`Record whether agent session events reach the SIEM.`,
+ src:["clAiGa","auditStream","waAgents"]},
+{id:"AI-06",d:"AI",t:"Agent-authored changes get the same or stronger review",sc:"EO",sev:"H",mat:"GA",lic:"",
+ rec:`Keep the Additional approval for unattributed Copilot pull requests option on. Protect agent definition and instruction files (for example <code>.github/agents/</code>) with a push rule or CODEOWNERS. Delegate AI administration through the View or Manage enterprise AI controls permissions.`,
+ why:`An agent's pull request must not be approvable only by the person who prompted it, and its instruction files steer every later change it makes. GitHub suggested push rules for agent files when it introduced enterprise custom agents.`,
+ where:`Rulesets &rarr; pull request options; push ruleset; enterprise custom roles.`,
+ verify:`Check the ruleset option, the push rule or CODEOWNERS entry, and who holds the AI controls permissions.`,
+ src:["rules","clAiPreview","clAiDelegate"]},
+
+/* ---------- MIG ---------- */
+{id:"MIG-01",d:"MIG",t:"The baseline is in place before the first production wave",sc:"E",sev:"H",mat:"GA",lic:"",
+ rec:`Before any production repository is migrated: identity (IAM-01 to 03), enterprise policies (POL), security configuration default (SEC-02), audit streaming (LOG-01) and the enterprise ruleset in Evaluate (RUL-01) are complete.`,
+ why:`Settings applied on arrival cost nothing. Settings applied later mean retrofitting hundreds of repositories and negotiating with teams who have already built habits around the gap.`,
+ where:`Migration plan and this checklist.`,
+ verify:`Compare the migration schedule with the status of the controls listed.`,
+ src:["bp","geiAdo","geiGitlab"]},
+{id:"MIG-02",d:"MIG",t:"Repositories are checked against platform limits before migration",sc:"R",sev:"M",mat:"GA",lic:"",
+ rec:`Run git-sizer on every source repository. Resolve files over 100 MiB (move to Git LFS), repositories over 40 GiB, single commits or pushes over 2 GiB and references longer than 255 bytes.`,
+ why:`These are documented hard limits for GitHub and the importer. Finding them in a trial run is cheaper than during a cutover window.`,
+ where:`Source repository analysis.`,
+ verify:`Ask for the size report and the list of exceptions with their remediation.`,
+ mig:`Git LFS objects are not migrated from either source and must be pushed afterwards. GitLab.com caps export archives at 40 GB including metadata.`,
+ src:["geiAdo","geiGitlab"]},
+{id:"MIG-03",d:"MIG",t:"Every wave is rehearsed in a sandbox organization",sc:"O",sev:"M",mat:"GA",lic:"",
+ rec:`Trial migrations run into a sandbox organization that has the same rulesets and security configuration as production targets. Migration logs are reviewed for each repository.`,
+ why:`A rehearsal with real governance applied shows which rules block the import and how many secret scanning alerts to expect. Trial runs need no downtime at the source.`,
+ where:`Sandbox organization; migration logs.`,
+ verify:`Ask for the last rehearsal's log review.`,
+ src:["geiAdo","geiGitlab","orgStructure"]},
+{id:"MIG-04",d:"MIG",t:"Mannequins are reclaimed to managed users",sc:"O",sev:"M",mat:"GA",lic:"",
+ rec:`After each wave, map placeholder users (mannequins) to the matching managed user accounts. Keep the mapping file.`,
+ why:`Until reclaimed, imported pull requests, issues and comments are owned by placeholders, attribution is lost and that content may not appear in search.`,
+ where:`Organization migration tooling (mannequin reclaim).`,
+ verify:`List unreclaimed mannequins per organization.`,
+ mig:`EMU accounts must exist before reclaim, so provisioning (IAM-03) precedes this step.`,
+ src:["geiAdo","geiGitlab"]},
+{id:"MIG-05",d:"MIG",t:"Source branch and merge policies are mapped to rulesets",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`For each source repository, record its branch policies or protected-branch and approval settings, and confirm the target tier's rulesets meet or exceed them.`,
+ why:`From ADO, repository-level branch policies migrate but user-scoped and cross-repo policies do not. From GitLab, required approvals, merge trains and pipeline gates do not migrate at all. Without a mapping, protection silently drops.`,
+ where:`Migration inventory; rulesets.`,
+ verify:`Sample migrated repositories and compare effective rules with the source settings.`,
+ src:["geiAdo","geiGitlab","rules"]},
+{id:"MIG-06",d:"MIG",t:"Pipelines are inventoried and converted through a governed path",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`Run Actions Importer <code>audit</code> and <code>forecast</code> against Azure DevOps and GitLab. Convert with <code>dry-run</code>, review, then <code>migrate</code>. Converted workflows must meet ACT-01 to ACT-05 and call shared workflows (ACT-15).`,
+ why:`The importer targets roughly 80 percent automatic conversion per workflow, so every result needs review. Pipelines are not moved by the repository importer: Azure Pipelines can keep running against GitHub repositories in the interim, while GitLab CI has no automatic equivalent.`,
+ where:`<code>gh actions-importer</code> output; conversion pull requests.`,
+ verify:`Ask for the audit report and the review checklist applied to converted workflows.`,
+ src:["importer","geiAdo","geiGitlab"]},
+{id:"MIG-07",d:"MIG",t:"Credentials are redesigned, not copied",sc:"OR",sev:"H",mat:"GA",lic:"",
+ rec:`Inventory ADO service connections, variable groups and secure files, and GitLab CI/CD variables and deploy tokens. Replace cloud credentials with OIDC (ACT-09); recreate the rest as environment secrets (ACT-10). Rotate anything that existed in the old system.`,
+ why:`None of these are migrated, so every one will be recreated by hand. That is the moment to drop long-lived keys. Old credentials have been readable by the old platform's administrators and pipelines for years.`,
+ where:`Migration inventory; cloud IAM.`,
+ verify:`Compare the credential inventory with its disposition (replaced by OIDC, recreated and rotated, retired).`,
+ src:["geiGitlab","geiAdo","actOidc","actSecure"]},
+{id:"MIG-08",d:"MIG",t:"Integrations and webhooks are rebuilt deliberately",sc:"OR",sev:"M",mat:"GA",lic:"",
+ rec:`Inventory ADO service hooks and GitLab webhooks and integrations. Rebuild each as a GitHub App where one exists, otherwise as a webhook over HTTPS with a secret.`,
+ why:`Service hooks and webhooks are not migrated. OpenSSF recommends webhooks use SSL and a secret so receivers can verify the sender.`,
+ where:`Migration inventory; organization and repository webhook settings.`,
+ verify:`Sample webhooks: HTTPS URL, secret set, SSL verification on.`,
+ src:["geiAdo","geiGitlab","openssf"]},
+{id:"MIG-09",d:"MIG",t:"Source systems are frozen, archived and decommissioned on a plan",sc:"E",sev:"M",mat:"GA",lic:"",
+ rec:`After cutover each source repository is made read-only. Data that does not migrate and is needed for audit (pipeline history, artifacts, boards, vulnerability reports, wikis where not carried) is exported. Decommission dates are set.`,
+ why:`Two writable copies diverge, and the old copy keeps its weaker controls and old credentials. Auditors may still need evidence that lived only in the old system.`,
+ where:`Migration plan.`,
+ verify:`Check a sample of migrated repositories: source is read-only and an archive record exists.`,
+ src:["geiAdo","geiGitlab"]}
+];
+
+/* ---------- Reference: platform changes ---------- */
+const CHANGES = [
+ {d:"24 Mar 2025",t:"Enterprise rulesets and enterprise custom properties generally available",w:"The baseline can be set once for all organizations and targeted by repository metadata.",s:"clRulesGa",c:"RUL-01, POL-10"},
+ {d:"15 Aug 2025",t:"Actions policy gains a block list and SHA pinning enforcement",w:"Pinning moves from convention to an enforceable policy.",s:"clShaPin",c:"ACT-01, ACT-02"},
+ {d:"28 Oct 2025",t:"Immutable releases generally available",w:"Release assets and tags can be locked at organization level.",s:"clImmutable",c:"SEC-12"},
+ {d:"23 Feb 2026",t:"Enterprise-defined custom organization roles generally available",w:"One role catalogue for every organization.",s:"clOrgRoles",c:"ENT-05"},
+ {d:"27 Feb 2026",t:"Enterprise AI Controls and agent control plane generally available",w:"One place for Copilot, agent and MCP policy. MCP allow lists stayed in preview.",s:"clAiGa",c:"AI-01, AI-03"},
+ {d:"Mar 2026",t:"CIS GitHub Benchmark v1.2.0 published",w:"Current external benchmark to map this baseline against.",s:"cis",c:"All"},
+ {d:"26 Mar 2026",t:"GitHub publishes its Actions 2026 security roadmap",w:"Lockfiles, execution protections, scoped secrets, data stream and egress firewall announced.",s:"roadmap",c:"ACT-03, ACT-07, ACT-10, ACT-14"},
+ {d:"4 Jun 2026",t:"Enterprise Teams generally available",w:"Cross-organization teams for roles, access and bypass lists.",s:"clTeamsGa",c:"ENT-06, RUL-09"},
+ {d:"26 Jun 2026",t:"Actions cache becomes read-only for untrusted triggers",w:"Closes a cache poisoning route used in 2024 to 2026 incidents. Platform default; no setting.",s:"clCache",c:"ACT-07"},
+ {d:"1 Jul 2026",t:"Enterprise managed-settings.json generally available",w:"Copilot client behaviour enforced from a file in .github-private.",s:"clManaged",c:"AI-04"},
+ {d:"15 Jul 2026",t:"OIDC subject claims include immutable IDs for new repositories",w:"Cloud trust policies must match the new subject format for repositories created after this date.",s:"actOidc",c:"ACT-09"},
+ {d:"17 Sep 2026",t:"Workflow execution protections generally available",w:"Actor and event rules for workflows, with Evaluate mode, Insights and REST API.",s:"clWep",c:"ACT-07"},
+ {d:"1 Oct 2026",t:"Retention policy now covers checks, workflow runs and commit statuses",w:"Run history expires with the retention setting. Review it for evidence needs.",s:"polActions",c:"ACT-11"},
+ {d:"28 Oct 2026",t:"Workflow dependency lockfiles reported generally available",w:"Lockfile plus Require lockfile policy supersede manual SHA pinning as the strongest option.",s:"infoq",c:"ACT-03"},
+ {d:"9 Nov 2026",t:"Secret scanning for Actions workflow logs in public preview",w:"Leaked credentials in build logs become alerts.",s:"clLogScan",c:"SEC-06"},
+ {d:"2 Dec 2026",t:"Upcoming: default block on pull_request_target enforced for public repositories",w:"Does not cover private or internal repositories, so an EMU enterprise needs its own rule.",s:"clWep",c:"ACT-07",up:true},
+ {d:"Not yet GA",t:"Scoped secrets, native egress firewall, Actions Data Stream",w:"Announced on the roadmap. Check the changelog for current status before designing around them.",s:"roadmapDisc",c:"ACT-10, ACT-14",up:true}
+];
+
+/* ---------- Reference: concept map ---------- */
+const MAP = [
+ ["Organization / collection","Top-level group","Enterprise, with one or a few organizations","Do not create an organization per ADO project or GitLab group by default (ENT-04)."],
+ ["Project","Group / subgroup","Teams, plus custom properties on repositories","Organizations do not nest. Use nested teams for access and properties for classification (POL-10)."],
+ ["Repository","Project (repository)","Repository","Choose visibility on purpose; the default is internal (POL-11)."],
+ ["Security groups, project permissions","Group and project roles","IdP groups synced to teams; repository roles; custom roles","Permissions are not migrated. Rebuild on teams (IAM-03, ENT-05)."],
+ ["Branch policies","Protected branches, approval rules","Rulesets at enterprise, organization and repository level","ADO repository-level policies migrate; GitLab rules do not (RUL-01, MIG-05)."],
+ ["Automatic reviewers by path","CODEOWNERS, approval rules","CODEOWNERS plus required reviewers by team rule","Check GitLab CODEOWNERS syntax after import (RUL-04)."],
+ ["Build validation","Pipelines must succeed","Required status checks; required workflows","RUL-05, RUL-06."],
+ ["(none native)","Push rules","Push rulesets and commit metadata rules","Enable after migration waves (RUL-11, RUL-12)."],
+ ["Azure Pipelines YAML and classic","GitLab CI (.gitlab-ci.yml)","GitHub Actions workflows","Convert with Actions Importer; review every result (MIG-06)."],
+ ["Templates, task groups","Includes, components","Reusable workflows and composite actions","Central platform repository (ACT-15)."],
+ ["Required templates, pipeline decorators","Compliance pipelines, pipeline execution policies","Required workflows through rulesets","RUL-06."],
+ ["Agent pools","Runners (shared, group, project)","GitHub-hosted runners; self-hosted runner groups","Ephemeral and grouped; no repository-level runners (ACT-08)."],
+ ["Service connections","CI/CD variables holding cloud keys","OIDC federation to the cloud provider","Do not copy keys across (ACT-09, MIG-07)."],
+ ["Variable groups, secure files","CI/CD variables (group, project)","Organization, repository and environment secrets and variables","Not migrated (ACT-10)."],
+ ["Environments with approvals and checks","Protected environments","Environments with required reviewers and branch restrictions","ACT-10."],
+ ["Pipeline permissions","Protected variables and runners","Workflow execution protections; runner group restrictions","ACT-07, ACT-08."],
+ ["Service hooks","Webhooks, integrations","GitHub Apps; webhooks with secrets","Not migrated (IAM-09, MIG-08)."],
+ ["Personal access tokens","Personal, project and group access tokens; deploy tokens","Fine-grained tokens with approval; GitHub Apps","IAM-07, IAM-09."],
+ ["Advanced Security for Azure DevOps","SAST, secret detection, dependency scanning","Secret Protection and Code Security through security configurations","Findings are not migrated (SEC-02 to SEC-09)."],
+ ["Azure Artifacts","Package and container registry","GitHub Packages, or keep the existing registry","Not migrated by the importer. Decide per ecosystem."],
+ ["Azure Boards","Issues, epics, boards","GitHub Issues and Projects, or keep Boards integrated","Boards can stay integrated with GitHub; GitLab issue boards are not migrated."],
+ ["Auditing (audit streams)","Audit events (streaming)","Enterprise audit log with streaming","Enable before wave one (LOG-01)."]
+];
+
+</script>
+<script>
+(function(){
+"use strict";
+var KEY="ghec-baseline-audit-v1";
+var STATUS=[["todo","Not assessed","--na"],["ok","Compliant","--ok"],["part","Partial","--part"],["bad","Non-compliant","--bad"],["risk","Accepted risk","--risk"],["na","Not applicable","--line"]];
+var SEV={C:"Critical",H:"High",M:"Medium",L:"Low"};
+var SC={E:"Enterprise",O:"Organization",R:"Repository"};
+var state={meta:{},items:{}};
+var framed=false; try{framed=window.self!==window.top;}catch(e){framed=true;}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&o.items){state=o;state.meta=state.meta||{};}}}catch(e){}}
+var saveT;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));flash("Saved in this browser");}catch(e){flash("Could not save in this browser. Export to keep your work.");}}
+function flash(m){var el=$("savemsg");el.textContent=m;clearTimeout(saveT);saveT=setTimeout(function(){el.textContent="";},2500);}
+function item(id){return state.items[id]||(state.items[id]={s:"todo",o:"",n:""});}
+function st(id){return (state.items[id]&&state.items[id].s)||"todo";}
+
+/* ---------- render controls ---------- */
+function srcList(keys){return "<ul>"+keys.map(function(k){var s=SOURCES[k];return '<li><a href="'+s.u+'" target="_blank" rel="noopener">'+esc(s.t)+'</a> <span class="kind">'+esc(s.k)+"</span></li>";}).join("")+"</ul>";}
+function card(c){
+  var it=state.items[c.id]||{s:"todo",o:"",n:""};
+  var chips='<span class="chip sev'+c.sev+'">'+SEV[c.sev]+"</span>"+
+    c.sc.split("").map(function(x){return '<span class="chip">'+SC[x]+"</span>";}).join("")+
+    (c.mat==="Preview"?'<span class="chip prev">Preview</span>':"")+
+    (c.lic?'<span class="chip">Needs '+esc(c.lic)+"</span>":"");
+  var opts=STATUS.map(function(s){return '<option value="'+s[0]+'"'+(it.s===s[0]?" selected":"")+">"+s[1]+"</option>";}).join("");
+  return '<article class="ctl" id="'+c.id+'" data-s="'+it.s+'">'+
+   '<div class="ch"><span class="cid">'+c.id+"</span><h3>"+esc(c.t)+"</h3>"+
+   '<select class="st" id="s-'+c.id+'" data-id="'+c.id+'" aria-label="Status for '+c.id+'">'+opts+"</select>"+
+   '<div class="chips">'+chips+"</div></div>"+
+   '<div class="cb"><div><h4>Recommended</h4><p>'+c.rec+"</p></div>"+
+   "<div><h4>Why</h4><p>"+c.why+"</p></div>"+
+   "<div><h4>How to check</h4><p>"+c.where+"</p><p>"+c.verify+"</p></div></div>"+
+   '<details class="ex"><summary>'+(c.mig?"Migration notes and sources":"Sources")+'</summary><div class="in">'+
+   (c.mig?"<div><h4>Migration notes</h4><p>"+c.mig+"</p></div>":"")+
+   "<div><h4>Sources</h4>"+srcList(c.src)+"</div></div></details>"+
+   '<div class="au"><label class="f" for="o-'+c.id+'">Current state observed<textarea id="o-'+c.id+'" data-id="'+c.id+'" data-k="o" placeholder="Value seen in settings">'+esc(it.o)+"</textarea></label>"+
+   '<label class="f" for="n-'+c.id+'">Notes, evidence and owner<textarea id="n-'+c.id+'" data-id="'+c.id+'" data-k="n" placeholder="Evidence link, exception approver, remediation owner and date">'+esc(it.n)+"</textarea></label></div>"+
+   "</article>";
+}
+function match(c){
+  var q=$("q").value.trim().toLowerCase(),fs=$("f-st").value,fv=$("f-sev").value,fc=$("f-sc").value,fm=$("f-mat").value;
+  if(fv&&c.sev!==fv)return false;
+  if(fc&&c.sc.indexOf(fc)<0)return false;
+  if(fm&&c.mat!==fm)return false;
+  var s=st(c.id);
+  if(fs==="open"){if(s!=="part"&&s!=="bad")return false;}else if(fs&&s!==fs)return false;
+  if(q){var hay=(c.id+" "+c.t+" "+c.rec+" "+c.why+" "+c.where+" "+c.verify+" "+(c.mig||"")).toLowerCase();if(hay.indexOf(q)<0)return false;}
+  return true;
+}
+function renderList(){
+  var html="",shown=0;
+  DOMAINS.forEach(function(d){
+    var cs=CONTROLS.filter(function(c){return c.d===d.k&&match(c);});
+    if(!cs.length)return;
+    shown+=cs.length;
+    html+='<div class="dom" id="dom-'+d.k+'"><h2>'+esc(d.t)+"</h2><p>"+esc(d.d)+"</p></div>"+cs.map(card).join("");
+  });
+  $("list").innerHTML=html||'<div class="panel empty">No controls match these filters.</div>';
+}
+function renderSummary(){
+  var n=CONTROLS.length,cnt={};STATUS.forEach(function(s){cnt[s[0]]=0;});
+  CONTROLS.forEach(function(c){cnt[st(c.id)]++;});
+  $("bar").innerHTML=STATUS.filter(function(s){return s[0]!=="todo";}).map(function(s){return '<i style="width:'+(cnt[s[0]]/n*100)+"%;background:var("+(s[0]==="na"?"--na":s[2])+')"></i>';}).join("");
+  var done=n-cnt.todo;
+  $("legend").innerHTML="<span><b>"+done+"</b> of "+n+" assessed</span>"+STATUS.map(function(s){return '<span><i class="dot" style="background:var('+(s[0]==="na"?"--na":s[2])+')"></i>'+s[1]+" <b>"+cnt[s[0]]+"</b></span>";}).join("");
+  $("rail").innerHTML=DOMAINS.map(function(d){
+    var cs=CONTROLS.filter(function(c){return c.d===d.k;}),a=cs.filter(function(c){return st(c.id)!=="todo";}).length;
+    return '<a href="#audit" data-dom="'+d.k+'"><span>'+esc(d.t)+"</span><small>"+a+"/"+cs.length+'</small><span class="mini"><i style="width:'+(a/cs.length*100)+'%"></i></span></a>';
+  }).join("");
+}
+
+/* ---------- static tables ---------- */
+function renderRef(){
+  $("chg").innerHTML=CHANGES.map(function(r){var s=SOURCES[r.s];return "<tr"+(r.up?' class="up"':"")+'><td class="d">'+esc(r.d)+"</td><td>"+esc(r.t)+"</td><td>"+esc(r.w)+'</td><td class="d">'+esc(r.c)+'</td><td><a href="'+s.u+'" target="_blank" rel="noopener">'+esc(s.k)+"</a></td></tr>";}).join("");
+  $("map").innerHTML=MAP.map(function(r){return "<tr>"+r.map(function(x){return "<td>"+esc(x)+"</td>";}).join("")+"</tr>";}).join("");
+  var used={};CONTROLS.forEach(function(c){c.src.forEach(function(k){(used[k]=used[k]||[]).push(c.id);});});
+  CHANGES.forEach(function(r){used[r.s]=used[r.s]||[];});
+  $("src").innerHTML=Object.keys(SOURCES).sort(function(a,b){return (SOURCES[a].k+SOURCES[a].t).localeCompare(SOURCES[b].k+SOURCES[b].t);}).map(function(k){var s=SOURCES[k];
+    return '<tr><td class="kind">'+esc(s.k)+'</td><td><a href="'+s.u+'" target="_blank" rel="noopener">'+esc(s.t)+'</a></td><td class="d" style="white-space:normal">'+((used[k]||[]).join(", ")||"Timeline")+"</td></tr>";}).join("");
+}
+
+/* ---------- views ---------- */
+var VIEWS=["audit","position","changes","mapping","sources"];
+function route(){
+  var h=(location.hash||"").replace("#","");if(VIEWS.indexOf(h)<0)h="audit";
+  VIEWS.forEach(function(v){$("v-"+v).classList.toggle("on",v===h);});
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs a"),function(a){if(a.getAttribute("data-v")===h)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+}
+
+/* ---------- export / import ---------- */
+function toJSON(){return JSON.stringify({format:"ghec-baseline-audit",version:1,exported:new Date().toISOString(),meta:state.meta,items:state.items},null,2);}
+function q(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"';}
+function toCSV(){
+  var lab={};STATUS.forEach(function(s){lab[s[0]]=s[1];});var dn={};DOMAINS.forEach(function(d){dn[d.k]=d.t;});
+  var rows=[["ID","Domain","Control","Set at","Severity","Maturity","Status","Current state observed","Notes"].map(q).join(",")];
+  CONTROLS.forEach(function(c){var it=state.items[c.id]||{};rows.push([c.id,dn[c.d],c.t,c.sc.split("").map(function(x){return SC[x];}).join(" / "),SEV[c.sev],c.mat,lab[it.s||"todo"],it.o||"",it.n||""].map(q).join(","));});
+  return rows.join("\r\n");
+}
+var outKind="json";
+function showOut(k){outKind=k;$("x-out").value=k==="csv"?toCSV():toJSON();}
+function doImport(text){
+  try{var o=JSON.parse(text);if(!o||typeof o.items!=="object")throw new Error("no items");
+    var ok={};STATUS.forEach(function(s){ok[s[0]]=1;});var items={};
+    Object.keys(o.items).forEach(function(id){var it=o.items[id]||{};items[id]={s:ok[it.s]?it.s:"todo",o:String(it.o||""),n:String(it.n||"")};});
+    state={meta:o.meta&&typeof o.meta==="object"?o.meta:{},items:items};save();fillMeta();renderList();renderSummary();
+    $("i-msg").textContent="Loaded "+Object.keys(items).length+" control records.";
+  }catch(e){$("i-msg").textContent="That is not a valid audit export. Paste the JSON produced by Export audit.";}
+}
+function fillMeta(){Array.prototype.forEach.call(document.querySelectorAll("[data-m]"),function(el){el.value=state.meta[el.getAttribute("data-m")]||"";});}
+
+/* ---------- events ---------- */
+function bind(){
+  $("list").addEventListener("change",function(e){var t=e.target;
+    if(t.classList.contains("st")){var id=t.getAttribute("data-id");item(id).s=t.value;$(id).setAttribute("data-s",t.value);save();renderSummary();}
+  });
+  $("list").addEventListener("input",function(e){var t=e.target,k=t.getAttribute("data-k");if(k){item(t.getAttribute("data-id"))[k]=t.value;save();}});
+  ["q","f-st","f-sev","f-sc","f-mat"].forEach(function(id){$(id).addEventListener("input",renderList);});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-m]"),function(el){el.addEventListener("input",function(){state.meta[el.getAttribute("data-m")]=el.value;save();});});
+  $("rail").addEventListener("click",function(e){var a=e.target.closest("a");if(!a)return;e.preventDefault();
+    if(location.hash!=="#audit"&&location.hash!==""){location.hash="audit";}
+    var el=$("dom-"+a.getAttribute("data-dom"));if(el)el.scrollIntoView();});
+  var open=false;$("b-open").addEventListener("click",function(){open=!open;Array.prototype.forEach.call(document.querySelectorAll("details.ex"),function(d){d.open=open;});this.textContent=open?"Collapse all notes":"Expand all notes";});
+  $("b-exp").addEventListener("click",function(){$("io-imp").classList.remove("on");var on=$("io-exp").classList.toggle("on");if(on)showOut(outKind);});
+  $("b-imp").addEventListener("click",function(){$("io-exp").classList.remove("on");$("io-imp").classList.toggle("on");});
+  $("x-json").addEventListener("click",function(){showOut("json");});
+  $("x-csv").addEventListener("click",function(){showOut("csv");});
+  $("x-copy").addEventListener("click",function(){var b=this,ta=$("x-out");
+    function done(m){b.textContent=m;setTimeout(function(){b.textContent="Copy to clipboard";},2000);}
+    try{navigator.clipboard.writeText(ta.value).then(function(){done("Copied");},function(){ta.select();done("Select all and copy manually");});}
+    catch(e){ta.select();done("Select all and copy manually");}});
+  $("i-go").addEventListener("click",function(){doImport($("i-in").value);});
+  $("i-file").addEventListener("change",function(){var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){doImport(String(r.result));};r.readAsText(f);});
+  var armed=false,armT;$("b-reset").addEventListener("click",function(){var b=this;
+    if(!armed){armed=true;b.textContent="Click again to clear every status and note";armT=setTimeout(function(){armed=false;b.textContent="Clear audit";},4000);return;}
+    clearTimeout(armT);armed=false;b.textContent="Clear audit";state={meta:{},items:{}};save();fillMeta();renderList();renderSummary();});
+  if(!framed){
+    var p=$("b-print");p.hidden=false;p.addEventListener("click",function(){Array.prototype.forEach.call(document.querySelectorAll("details.ex"),function(d){d.open=true;});window.print();});
+    var d=$("x-dl");d.hidden=false;d.addEventListener("click",function(){
+      var csv=outKind==="csv",blob=new Blob([csv?toCSV():toJSON()],{type:csv?"text/csv":"application/json"}),a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);a.download="ghec-baseline-audit"+(state.meta.ent?"-"+state.meta.ent.replace(/[^a-z0-9-]/gi,""):"")+(csv?".csv":".json");
+      document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);});
+  }
+  window.addEventListener("hashchange",route);
+}
+load();fillMeta();renderRef();renderList();renderSummary();bind();route();
+})();
+
+</script>
+</body>
+</html>
